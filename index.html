@@ -118,6 +118,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .viewer .acts{display:flex;gap:8px;padding:10px 14px calc(14px + env(safe-area-inset-bottom));flex-wrap:wrap}
 .viewer .acts button{flex:1;min-width:30%;border:0;border-radius:12px;padding:12px 8px;font-weight:700;font-size:13px;background:#222;color:#fff;cursor:pointer}
 .viewer .acts .del{color:#ff6b5e}
+.viewer .acts #vMv{flex-basis:100%;background:#2b2a6b}
 .wbtn{border:0;background:rgba(255,255,255,.15);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;flex:none}
 .seg{display:flex;gap:8px;margin-bottom:12px}
 .seg button{flex:1;padding:12px 6px!important;font-size:13px!important;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
@@ -176,8 +177,6 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
     <h3 id="schTitle">Nuova schedina</h3>
     <div class="field"><label for="sDate">Giorno della giocata</label><input type="date" id="sDate"></div>
     <div class="field"><label for="sP">Puntata (€)</label><input id="sP" inputmode="decimal" placeholder="0,00"></div>
-    <div class="field" style="margin-bottom:6px"><label>Esito</label></div>
-    <div class="seg" id="sEsito"><button type="button" data-e="attesa">⏳ In attesa</button><button type="button" data-e="vinta">✅ Vinta</button><button type="button" data-e="persa">❌ Persa</button></div>
     <div class="field" id="sVField"><label for="sV">Vincita (€)</label><input id="sV" inputmode="decimal" placeholder="0,00"></div>
     <div class="prev"><span>Bilancio della schedina</span><b id="sBal">—</b></div>
     <div id="sPicsWrap">
@@ -228,7 +227,17 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 <div class="viewer" id="viewer">
   <div class="top"><div><b id="vDate"></b><div id="vInfo" style="opacity:.75;font-size:13px"></div></div><button class="wbtn" id="vClose" aria-label="Chiudi">✕</button></div>
   <div class="img"><img id="vImg" alt="Foto della vincita"><button class="nav" id="vPrev" style="left:8px" aria-label="Precedente">‹</button><button class="nav" id="vNext" style="right:8px" aria-label="Successiva">›</button></div>
-  <div class="acts"><button id="vDay">📅 Vai al giorno</button><button id="vMove"></button><button class="del" id="vDel">🗑 Elimina</button></div>
+  <div class="acts"><button id="vMv">📅 Sposta al giorno della giocata</button><button id="vDay">Vai al giorno</button><button id="vMove"></button><button class="del" id="vDel">🗑 Elimina</button></div>
+</div>
+<div class="sheet-bg" id="mvBg" style="z-index:40">
+  <form class="sheet menu" id="mvForm" autocomplete="off">
+    <h3>📅 Sposta al giorno della giocata</h3>
+    <p id="mvInfo"></p>
+    <div class="field"><label for="mvDate">Giorno in cui l'hai giocata</label><input type="date" id="mvDate"></div>
+    <div class="field" id="mvAmtF"><label for="mvAmt">Vincita di questa schedina (€)</label><input id="mvAmt" inputmode="decimal" placeholder="0,00"></div>
+    <div class="err" id="mvErr"></div>
+    <div class="btns"><button type="button" class="btn" id="mvNo">Annulla</button><button type="submit" class="btn main" id="mvGo">Sposta</button></div>
+  </form>
 </div>
 <div class="sheet-bg" id="upBg">
   <div class="sheet menu">
@@ -386,11 +395,11 @@ function renderMonth(m){
   const t=monthTot(Y,m);let rows='';
   for(let d=1;d<=dim(Y,m);d++){const k=key(Y,m,d),t=dayTot(k);const any=t.gioc||t.r!=null||t.n>0;
     if(!showAll&&!any&&k!==todayKey)continue;
-    rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${t.n>1?`<span class="cnt">×${t.n}</span>`:''}${schDay(k).some(s=>esitoOf(s)==='attesa')?'<span class="pic">⏳</span>':''}${byDay(k).length?'<span class="pic">📷</span>':''}</td>
-      <td>${t.gioc?nn(t.p):''}</td><td>${t.gioc&&t.v?nn(t.v):''}</td><td>${t.r!=null?nn(t.r):''}</td>
+    rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${t.n>1?`<span class="cnt">×${t.n}</span>`:''}${byDay(k).length?'<span class="pic">📷</span>':''}</td>
+      <td>${t.gioc&&t.p?nn(t.p):''}</td><td>${t.gioc&&t.v?nn(t.v):''}</td><td>${t.r!=null?nn(t.r):''}</td>
       <td class="${t.gioc?cls(t.b):''}">${t.gioc?sn(t.b):''}</td></tr>`}
   if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Nessuna giocata. Tocca “Inserisci schedina”.</td></tr>`;
-  $('view').innerHTML=pendingCard()+kpis(t,MESI[m].toLowerCase())+`<div class="card">
+  $('view').innerHTML=kpis(t,MESI[m].toLowerCase())+`<div class="card">
    <div class="toolbar"><b>🎰 ${MESI[m]} ${Y}</b><button class="toggle" id="tg">${showAll?'Solo giorni giocati':'Mostra tutti i giorni'}</button></div>
    <table><thead><tr><th>Giorno</th><th>Puntata €</th><th>Vincita €</th><th>Ricarica €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
    <tfoot><tr><td>TOTALE</td><td>${nn(t.p)}</td><td>${nn(t.v)}</td><td>${nn(t.r)}</td><td class="${cls(t.b)}">${sn(t.b)}</td></tr></tfoot></table></div>
@@ -415,7 +424,7 @@ function renderSummary(){
   T.p=r2(T.p);T.v=r2(T.v);T.r=r2(T.r);T.b=r2(T.v-T.p);
   const att=ts.filter(t=>t.b>0).length,pas=ts.filter(t=>t.b<0).length;
   const rows=ts.map((t,i)=>`<tr data-m="${i}"><td>${MESI[i].slice(0,3)}<span class="mname">${MESI[i].slice(3)}</span></td><td>${nn(t.p)}</td><td>${nn(t.v)}</td><td>${nn(t.r)}</td><td class="${cls(t.b)}">${sn(t.b)}</td></tr>`).join('');
-  $('view').innerHTML=pendingCard()+kpis(T,'anno')+`<div class="card"><h2>Bilancio mese per mese</h2><div class="sub">${att} mesi attivi · ${pas} passivi</div><div class="chart">${chart(ts)}</div></div>
+  $('view').innerHTML=kpis(T,'anno')+`<div class="card"><h2>Bilancio mese per mese</h2><div class="sub">${att} mesi attivi · ${pas} passivi</div><div class="chart">${chart(ts)}</div></div>
   <div class="card"><div class="toolbar"><b>📊 Riepilogo annuale ${Y}</b></div>
   <table><thead><tr><th>Mese</th><th>Puntato €</th><th>Vincite €</th><th>Ricariche €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
   <tfoot><tr><td>TOTALE</td><td>${nn(T.p)}</td><td>${nn(T.v)}</td><td>${nn(T.r)}</td><td class="${cls(T.b)}">${sn(T.b)}</td></tr></tfoot></table></div>
@@ -435,8 +444,7 @@ const dLabel=g=>new Date(g+'T12:00').toLocaleDateString('it-IT',{weekday:'long',
 function openSheet(k){editKey=k;$('sheetTitle').textContent=dLabel(k);$('fR').value=fmtIn((E[k]||{}).r);fillDay();$('sheetBg').classList.add('on')}
 function fillDay(){const k=editKey,list=schDay(k);
   $('dayList').innerHTML=list.length?list.map((s,i)=>{const b=r2((s.v||0)-(s.p||0));const f=FOTO.find(x=>x.schedina_id===s.id);
-    const es=esitoOf(s);
-    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">${es==='attesa'?'⏳':es==='vinta'?'✅':'❌'}</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · ${es==='attesa'?'<b>in attesa</b>':es==='vinta'?'Vinta <b>'+nn(s.v)+'</b>':'persa'}</span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${es==='attesa'?'':cls(b)}">${es==='attesa'?'':sn(b)}</span></button>`}).join('')
+    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">${i+1}</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${s.v?nn(s.v):'—'}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>`}).join('')
     :`<p class="note" style="text-align:left;margin:0">Nessuna schedina in questo giorno.</p>`;
   $('dayList').querySelectorAll('.sitem').forEach(b=>b.onclick=()=>openSch(b.dataset.id));
   updDay();dayPics()}
@@ -454,17 +462,15 @@ function afterSave(k,msg){if(persist())toast(msg);Y=+k.slice(0,4);cur=+k.slice(5
 
 // editor della singola schedina
 let schId=null,schNew=[],schCart='Walter White',schEsito='attesa';
-function setEsito(e){schEsito=e;$('sEsito').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.e===e));$('sVField').style.display=e==='vinta'?'':'none';updSch()}
-$('sEsito').querySelectorAll('button').forEach(b=>b.onclick=()=>{setEsito(b.dataset.e);if(b.dataset.e==='vinta')setTimeout(()=>$('sV').focus(),50)});
+
 function openSch(id,day){schId=id;schNew=[];const s=id?S[id]:null;
   $('schTitle').textContent=id?'Schedina':'Nuova schedina';
   $('sDate').value=s?s.g:(day||todayKey);$('sP').value=fmtIn(s&&s.p);$('sV').value=fmtIn(s&&s.v);
-  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;setEsito(s?esitoOf(s):'attesa');
+  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;updSch();
   $('sPicsWrap').style.display=FN?'':'none';setSCart(schCart);updSch();sPics();
   $('schBg').classList.add('on');if(!id)setTimeout(()=>$('sP').focus(),60)}
 function closeSch(){$('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];document.activeElement&&document.activeElement.blur()}
-function updSch(){const p=num($('sP').value),v=schEsito==='vinta'?num($('sV').value):null,el=$('sBal');
-  if(schEsito==='attesa'&&p!=null&&!Number.isNaN(p)){el.textContent='⏳ in attesa · '+eur(-p);el.className='';return}
+function updSch(){const p=num($('sP').value),v=num($('sV').value),el=$('sBal');
   if((p==null&&v==null)||Number.isNaN(p)||Number.isNaN(v)){el.textContent='—';el.className='';return}
   const b=r2((v||0)-(p||0));el.textContent=sgn(b);el.className=cls(b)}
 ['sP','sV'].forEach(id=>$(id).oninput=updSch);
@@ -482,17 +488,16 @@ $('sDel').onclick=()=>{const id=schId,g=S[id].g,nf=FOTO.filter(f=>f.schedina_id=
     delete S[id];markS(id);FOTO.forEach(f=>{if(f.schedina_id===id)f.schedina_id=null});closeSch();
     afterSave(g,'Schedina eliminata').then(()=>{if($('sheetBg').classList.contains('on'))fillDay()});if($('sheetBg').classList.contains('on'))fillDay()})};
 $('schForm').onsubmit=async e=>{e.preventDefault();
-  const g=$('sDate').value,p=num($('sP').value),es=schEsito,v=es==='vinta'?num($('sV').value):null;
+  const g=$('sDate').value,p=num($('sP').value),v=num($('sV').value),es=(v||0)>0?'vinta':'persa';
   if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('sErr').textContent='Scegli il giorno della giocata.';return}
   if(Number.isNaN(p)||Number.isNaN(v)){$('sErr').textContent='Importo non valido.';return}
-  if(p==null){$('sErr').textContent='Scrivi la puntata.';return}
-  if(es==='vinta'&&!v){$('sErr').textContent='Scrivi quanto hai vinto.';return}
+  if(p==null&&v==null){$('sErr').textContent='Scrivi la puntata o la vincita.';return}
   const id=schId||uid();const old=S[id];
   S[id]={g,p,v,e:es,c:old&&old.c||new Date().toISOString()};markS(id);
   FOTO.forEach(f=>{if(f.schedina_id===id)f.giorno=g});
   const files=schNew.map(n=>n.file),cart=schCart;
   $('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];
-  const done=afterSave(g,es==='vinta'&&old&&esitoOf(old)!=='vinta'?`✅ Vincita aggiunta al ${+g.slice(8,10)}/${+g.slice(5,7)}`:old?'✓ Schedina aggiornata':es==='attesa'?'⏳ Schedina salvata, in attesa':'✓ Schedina salvata');
+  const done=afterSave(g,old?'✓ Schedina aggiornata':`✓ Salvata al ${+g.slice(8,10)}/${+g.slice(5,7)}`);
   if($('sheetBg').classList.contains('on')){if(editKey!==g)closeSheet();else fillDay()}
   if(files.length){await done;
     if(PS[id]){toast('⚠️ Senza internet: la schedina è salvata, le foto aggiungile dopo');return}
@@ -622,6 +627,35 @@ $('vPrev').onclick=()=>{if(vIdx>0){vIdx--;showV()}};
 $('vNext').onclick=()=>{if(vIdx<vList.length-1){vIdx++;showV()}};
 let tx=null;$('vImg').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
 $('vImg').addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>50){dx<0?$('vNext').onclick():$('vPrev').onclick()}});
+// sposta una vincita (foto + importo) al giorno in cui è stata giocata; la puntata resta dov'era
+let mvF=null;
+$('vMv').onclick=()=>{const f=vList[vIdx];mvF=f;const src=f.schedina_id&&S[f.schedina_id];
+  const nf=src?FOTO.filter(x=>x.schedina_id===f.schedina_id).length:0;
+  $('mvDate').value=f.giorno;$('mvErr').textContent='';$('mvGo').disabled=false;
+  if(src&&src.v){$('mvAmtF').style.display='';$('mvAmt').value=nf===1?fmtIn(src.v):'';
+    $('mvInfo').textContent=`Ora è al ${dLabel(f.giorno)}. Scegli il giorno della giocata: foto e vincita si spostano lì, la puntata resta dov'è.`+(nf>1?` Quel giorno ha ${nf} foto e ${nn(src.v)} € di vincite in totale: scrivi quanto ha vinto questa.`:'')}
+  else{$('mvAmtF').style.display='none';$('mvAmt').value='';$('mvInfo').textContent=`Ora è al ${dLabel(f.giorno)}. Scegli il giorno della giocata: la foto si sposta lì.`}
+  $('mvBg').classList.add('on')};
+$('mvNo').onclick=()=>$('mvBg').classList.remove('on');
+$('mvForm').onsubmit=async e=>{e.preventDefault();const f=mvF,g=$('mvDate').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('mvErr').textContent='Scegli il giorno.';return}
+  if(g===f.giorno){$('mvBg').classList.remove('on');return}
+  if(!navigator.onLine){$('mvErr').textContent='Serve internet per spostare la foto.';return}
+  const sid=f.schedina_id,src=sid&&S[sid];let target=null;
+  if(src&&src.v){const a=num($('mvAmt').value);
+    if(!a||Number.isNaN(a)){$('mvErr').textContent='Scrivi quanto ha vinto questa schedina.';return}
+    if(a>src.v+0.001){$('mvErr').textContent=`Non può essere più di ${nn(src.v)} €.`;return}
+    const nf=FOTO.filter(x=>x.schedina_id===sid).length;
+    if(src.p==null&&nf===1&&Math.abs(a-src.v)<0.005){src.g=g;markS(sid);target=sid}
+    else{target=uid();S[target]={g,p:null,v:a,e:'vinta',c:new Date().toISOString()};markS(target);
+      src.v=r2(src.v-a)||null;src.e=(src.v||0)>0?'vinta':'persa';if(src.p==null&&src.v==null)delete S[sid];markS(sid)}}
+  $('mvGo').disabled=true;$('mvErr').textContent='Sposto…';
+  try{persist();await sync();if(Object.keys(PS).length)throw new Error('sync');
+    const j=await fn(target?{azione:'modifica',id:f.id,schedina_id:target}:{azione:'modifica',id:f.id,schedina_id:null,giorno:g});
+    Object.assign(f,j.foto);const x=FOTO.find(y=>y.id===f.id);if(x)Object.assign(x,j.foto);
+    FOTO.sort((a,b)=>a.giorno<b.giorno?1:a.giorno>b.giorno?-1:0);
+    $('mvBg').classList.remove('on');showV();if($('schBg').classList.contains('on'))closeSch();render();if($('sheetBg').classList.contains('on'))fillDay();toast(`✓ Spostata al ${+g.slice(8,10)}/${+g.slice(5,7)}/${g.slice(0,4)}`)}
+  catch(err){$('mvGo').disabled=false;$('mvErr').textContent=err.message==='codice'?'':'Non sono riuscito a spostarla, riprova.'}};
 $('vDay').onclick=()=>{const f=vList[vIdx];$('viewer').classList.remove('on');closeSheet();closeSch();Y=+f.giorno.slice(0,4);cur=+f.giorno.slice(5,7)-1;showAll=false;render(true);
   setTimeout(()=>{const tr=document.querySelector(`tr[data-k="${f.giorno}"]`);if(tr)tr.scrollIntoView({block:'center'})},60)};
 $('vMove').onclick=async()=>{const f=vList[vIdx];const to=f.cartella==='Heisenberg'?'Walter White':'Heisenberg';
