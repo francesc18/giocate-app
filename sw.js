@@ -1,6 +1,6 @@
 // Service worker dell'app Giocate: tiene in cache i file così l'app si apre anche senza rete.
 // Le giocate sono salvate sul telefono (localStorage) e non passano da qui.
-const CACHE = "giocate-v2";
+const CACHE = "giocate-v3";
 const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
