@@ -125,6 +125,8 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .seg{display:flex;gap:8px;margin-bottom:12px}
 .seg button{flex:1;padding:12px 6px!important;font-size:13px!important;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
 .seg button.on{border-color:var(--acc);background:var(--acc);color:var(--acc-ink)}
+.chk{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:-4px 0 12px;font-size:14px;line-height:1.4;cursor:pointer}
+.chk input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--acc)}
 .slist{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
 .sitem{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;color:var(--ink);width:100%;font:inherit}
 .sitem .si-n{font-weight:800;font-size:14px;min-width:22px;color:var(--muted)}
@@ -187,7 +189,8 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
   <form class="sheet" id="schForm" autocomplete="off">
     <h3 id="schTitle">Nuova schedina</h3>
     <div class="field"><label for="sDate">Giorno della giocata</label><input type="date" id="sDate"></div>
-    <div class="field"><label for="sP">Puntata (€)</label><input id="sP" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label for="sP">Puntata di questa schedina (€)</label><input id="sP" inputmode="decimal" placeholder="0,00"></div>
+    <label class="chk" id="sInclF"><input type="checkbox" id="sIncl" checked><span id="sInclT"></span></label>
     <div class="field" id="sVField"><label for="sV">Vincita (€)</label><input id="sV" inputmode="decimal" placeholder="0,00"></div>
     <div class="prev"><span>Bilancio della schedina</span><b id="sBal">—</b></div>
     <div id="sPicsWrap">
@@ -497,7 +500,7 @@ let schId=null,schNew=[],schCart='Walter White',schEsito='attesa';
 function openSch(id,day){schId=id;schNew=[];const s=id?S[id]:null;
   $('schTitle').textContent=id?(s.v?'Vincita':'Puntate del giorno'):'Nuova vincita';
   $('sDate').value=s?s.g:(day||todayKey);$('sP').value=fmtIn(s&&s.p);$('sV').value=fmtIn(s&&s.v);
-  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;updSch();
+  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;$('sIncl').checked=true;updSch();updIncl();
   $('sPicsWrap').style.display=FN?'':'none';setSCart(schCart);updSch();sPics();
   $('schBg').classList.add('on');if(!id)setTimeout(()=>$('sP').focus(),60)}
 function closeSch(){$('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];document.activeElement&&document.activeElement.blur()}
@@ -505,6 +508,11 @@ function updSch(){const p=num($('sP').value),v=num($('sV').value),el=$('sBal');
   if((p==null&&v==null)||Number.isNaN(p)||Number.isNaN(v)){el.textContent='—';el.className='';return}
   const b=r2((v||0)-(p||0));el.textContent=sgn(b);el.className=cls(b)}
 ['sP','sV'].forEach(id=>$(id).oninput=updSch);
+// nuova vincita: la sua puntata può essere già tra le "puntate del giorno" → la spostiamo, senza contarla due volte
+function updIncl(){const g=$('sDate').value,p=num($('sP').value),ex=!schId&&/^\d{4}-\d{2}-\d{2}$/.test(g)?puntateDay(g):null;
+  const show=!!(ex&&ex.p>0&&p>0&&!Number.isNaN(p));$('sInclF').style.display=show?'':'none';
+  if(show)$('sInclT').textContent=`È già nelle puntate di quel giorno (${eur(ex.p)}): la sposto qui${p<=ex.p?`, le puntate del giorno diventano ${eur(r2(ex.p-p))}`:''}`;}
+$('sP').addEventListener('input',updIncl);$('sDate').addEventListener('change',updIncl);
 function setSCart(c){schCart=c;$('sSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.c===c))}
 $('sSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>setSCart(b.dataset.c));
 function sPics(){const ex=schId?FOTO.filter(f=>f.schedina_id===schId):[];
@@ -523,12 +531,15 @@ $('schForm').onsubmit=async e=>{e.preventDefault();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('sErr').textContent='Scegli il giorno della giocata.';return}
   if(Number.isNaN(p)||Number.isNaN(v)){$('sErr').textContent='Importo non valido.';return}
   if(p==null&&v==null){$('sErr').textContent='Scrivi la puntata o la vincita.';return}
+  const exP=!schId&&p>0?puntateDay(g):null,sposta=!!(exP&&exP.p>0&&$('sInclF').style.display!=='none'&&$('sIncl').checked);
+  if(sposta&&p>exP.p+0.001){$('sErr').textContent=`Le puntate di quel giorno sono solo ${eur(exP.p)}: togli la spunta o correggi la puntata.`;return}
   const id=schId||uid();const old=S[id];
+  if(sposta){const r=r2(exP.p-p);if(r>0)S[exP.id].p=r;else delete S[exP.id];markS(exP.id)}
   S[id]={g,p,v,e:es,c:old&&old.c||new Date().toISOString()};markS(id);
   FOTO.forEach(f=>{if(f.schedina_id===id)f.giorno=g});
   const files=schNew.map(n=>n.file),cart=schCart;
   $('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];
-  const done=afterSave(g,old?'✓ Schedina aggiornata':`✓ Salvata al ${+g.slice(8,10)}/${+g.slice(5,7)}`);
+  const done=afterSave(g,old?'✓ Aggiornata':`✓ Vincita salvata al ${+g.slice(8,10)}/${+g.slice(5,7)}`+(sposta?', puntata spostata':''));
   if($('sheetBg').classList.contains('on')){if(editKey!==g)closeSheet();else fillDay()}
   if(files.length){await done;
     if(PS[id]){toast('⚠️ Senza internet: la schedina è salvata, le foto aggiungile dopo');return}
