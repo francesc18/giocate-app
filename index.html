@@ -122,6 +122,18 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .seg{display:flex;gap:8px;margin-bottom:12px}
 .seg button{flex:1;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
 .seg button.on{border-color:var(--acc);background:var(--acc);color:var(--acc-ink)}
+.slist{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+.sitem{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;color:var(--ink);width:100%;font:inherit}
+.sitem .si-n{font-weight:800;font-size:14px;min-width:22px;color:var(--muted)}
+.sitem .si-m{flex:1;font-size:13px;color:var(--muted);line-height:1.35}
+.sitem .si-m b{color:var(--ink);font-size:14px}
+.sitem .si-b{font-weight:800;font-size:15px;white-space:nowrap}
+.sitem img{width:34px;height:44px;object-fit:cover;object-position:top;border-radius:6px;flex:none}
+.addrow{border:1.5px dashed var(--line);background:none;color:var(--acc);font-weight:800;font-size:15px;border-radius:12px;padding:13px;cursor:pointer;width:100%;margin-bottom:14px}
+.cnt{font-size:10px;font-weight:800;background:var(--chip);color:var(--muted);border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:1px}
+.sec{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 0 8px}
+.newph{outline:2px solid var(--acc);outline-offset:-2px}
+.ph .x{position:absolute;right:4px;top:4px;background:rgba(0,0,0,.65);color:#fff;border-radius:50%;width:22px;height:22px;font-size:13px;line-height:22px;text-align:center}
 .banner{background:var(--card);border:1.5px dashed var(--line);border-radius:16px;padding:14px;margin-bottom:14px;font-size:14px;line-height:1.45}
 .banner b{display:block;margin-bottom:6px}
 .banner .btn{margin-top:10px;display:block;width:100%}
@@ -140,25 +152,46 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
   <nav class="tabs" id="tabs"></nav>
   <main id="view"></main>
 </div>
-<button class="fab" id="fab">＋ Inserisci giocata</button>
+<button class="fab" id="fab">＋ Inserisci schedina</button>
 <button class="albbtn" id="albBtn" aria-label="Le mie vincite">📸</button>
 
 <div class="sheet-bg" id="sheetBg">
   <form class="sheet" id="sheet" autocomplete="off">
     <h3 id="sheetTitle"></h3>
-    <div class="field" id="dateField"><label for="fDate">Giorno</label><input type="date" id="fDate"></div>
-    <div class="field"><label for="fP">Puntata (€)</label><input id="fP" inputmode="decimal" placeholder="0,00"></div>
-    <div class="field"><label for="fV">Vincita (€)</label><input id="fV" inputmode="decimal" placeholder="0,00"></div>
-    <div class="field"><label for="fR">Ricarica (€)</label><input id="fR" inputmode="decimal" placeholder="0,00"></div>
+    <div class="sec">Schedine</div>
+    <div class="slist" id="dayList"></div>
+    <button type="button" class="addrow" id="dayAddS">＋ Aggiungi schedina</button>
+    <div class="field"><label for="fR">Ricarica del giorno (€)</label><input id="fR" inputmode="decimal" placeholder="0,00"></div>
     <div class="prev"><span>Bilancio del giorno</span><b id="fBal">—</b></div>
-    <div id="dayPicsWrap"><div class="field" style="margin-bottom:0"><label>Foto della vincita</label></div><div class="daypics" id="dayPics"></div></div>
+    <div id="dayPicsWrap"><div class="sec">Altre foto del giorno</div><div class="daypics" id="dayPics"></div></div>
     <div class="btns">
-      <button type="button" class="btn del" id="bDel">Svuota</button>
-      <button type="button" class="btn" id="bCancel">Annulla</button>
-      <button type="submit" class="btn main">Salva</button>
+      <button type="button" class="btn" id="bCancel">Chiudi</button>
+      <button type="submit" class="btn main">Salva ricarica</button>
     </div>
   </form>
 </div>
+
+<div class="sheet-bg" id="schBg">
+  <form class="sheet" id="schForm" autocomplete="off">
+    <h3 id="schTitle">Nuova schedina</h3>
+    <div class="field"><label for="sDate">Giorno</label><input type="date" id="sDate"></div>
+    <div class="field"><label for="sP">Puntata (€)</label><input id="sP" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label for="sV">Vincita (€)</label><input id="sV" inputmode="decimal" placeholder="0,00 se persa"></div>
+    <div class="prev"><span>Bilancio della schedina</span><b id="sBal">—</b></div>
+    <div id="sPicsWrap">
+      <div class="sec">Foto della schedina</div>
+      <div class="daypics" id="sPics"></div>
+      <div class="seg" id="sSeg"><button type="button" data-c="Walter White">Walter White</button><button type="button" data-c="Heisenberg">💎 Heisenberg</button></div>
+    </div>
+    <div class="err" id="sErr"></div>
+    <div class="btns">
+      <button type="button" class="btn del" id="sDel">Elimina</button>
+      <button type="button" class="btn" id="sCancel">Annulla</button>
+      <button type="submit" class="btn main" id="sGo">Salva</button>
+    </div>
+  </form>
+</div>
+<input type="file" id="sFile" accept="image/*" multiple hidden>
 
 <div class="sheet-bg" id="menuBg">
   <div class="sheet menu">
@@ -223,14 +256,24 @@ const $=id=>document.getElementById(id);
 const CFG=window.GIOCATE_CONFIG||{};
 const ONLINE=!!(CFG.url&&CFG.key);
 const CODE_KEY='giocate-codice';
-let E={},PEND={},CODE=null,lastSync=null;
-try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);E=o.entries||{};PEND=o.pending||{};lastSync=o.lastSync||null}}catch(e){}
+let E={},PEND={},S={},PS={},CODE=null,lastSync=null;
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);E=o.entries||{};PEND=o.pending||{};S=o.schedine||{};PS=o.pendingS||{};lastSync=o.lastSync||null}}catch(e){}
+// dati salvati da una versione precedente (un totale per giorno): le modifiche non ancora inviate diventano schedine
+try{if(localStorage.getItem(KEY)&&!(JSON.parse(localStorage.getItem(KEY)).v>=3)){
+  const id0=()=>crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2);
+  for(const k in PEND){const e=PEND[k];if(e&&(e.p!=null||e.v!=null)){const id=id0();S[id]={g:k,p:e.p??null,v:e.v??null,c:new Date().toISOString()};PS[id]=Object.assign({},S[id])}
+    if(e){delete e.p;delete e.v;if(e.r==null)delete PEND[k]}}
+  for(const k in E){delete E[k].p;delete E[k].v;if(E[k].r==null)delete E[k]}}}catch(e){}
 try{CODE=localStorage.getItem(CODE_KEY)}catch(e){}
 function persist(){
-  try{localStorage.setItem(KEY,JSON.stringify({v:2,saved:new Date().toISOString(),lastSync,entries:E,pending:PEND}));return true}
+  try{localStorage.setItem(KEY,JSON.stringify({v:3,saved:new Date().toISOString(),lastSync,entries:E,pending:PEND,schedine:S,pendingS:PS}));return true}
   catch(e){toast('⚠️ Non riesco a salvare sul telefono');return false}
 }
 function mark(k){PEND[k]=E[k]?Object.assign({},E[k]):null}
+function markS(id){PS[id]=S[id]?Object.assign({},S[id]):null}
+const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+function rowsToS(rows){const o={};rows.forEach(r=>{o[r.id]={g:r.giorno,p:r.puntata==null?null:+r.puntata,v:r.vincita==null?null:+r.vincita,c:r.created_at}});return o}
+const nPend=()=>Object.keys(PEND).length+Object.keys(PS).length;
 async function rpc(fn,body){
   const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),15000);
   try{const r=await fetch(CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',signal:ctl.signal,cache:'no-store',
@@ -249,13 +292,18 @@ function sync(){if(!ONLINE||!CODE)return Promise.resolve();if(syncing){again=tru
       if(ks.length){const snap=JSON.stringify(PEND);
         await rpc('giocate_salva',{p_codice:CODE,p_giorni:ks.map(k=>({giorno:k,puntata:PEND[k]?.p??null,vincita:PEND[k]?.v??null,ricarica:PEND[k]?.r??null}))});
         const sent=JSON.parse(snap);for(const k in sent){if(JSON.stringify(PEND[k])===JSON.stringify(sent[k]))delete PEND[k]}}
-      const srv=rowsToE(await rpc('giocate_elenco',{p_codice:CODE}));
-      for(const k in PEND){if(PEND[k])srv[k]=PEND[k];else delete srv[k]}
-      E=srv;lastSync=new Date().toISOString();persist();render();loadFoto();
-      setSync(Object.keys(PEND).length?'off':'ok',Object.keys(PEND).length?'Modifiche in attesa di invio':'✓ Tutto salvato online')}
+      const ids=Object.keys(PS);
+      if(ids.length){const snap=JSON.stringify(PS);
+        await rpc('schedine_salva',{p_codice:CODE,p_schedine:ids.map(id=>PS[id]?{id,giorno:PS[id].g,puntata:PS[id].p,vincita:PS[id].v}:{id,elimina:true})});
+        const sent=JSON.parse(snap);for(const id in sent){if(JSON.stringify(PS[id])===JSON.stringify(sent[id]))delete PS[id]}}
+      const [rg,rs]=await Promise.all([rpc('giocate_elenco',{p_codice:CODE}),rpc('schedine_elenco',{p_codice:CODE})]);
+      const srv=rowsToE(rg);for(const k in PEND){if(PEND[k])srv[k]=PEND[k];else delete srv[k]}
+      const ss=rowsToS(rs);for(const id in PS){if(PS[id])ss[id]=Object.assign({},ss[id],PS[id]);else delete ss[id]}
+      E=srv;S=ss;lastSync=new Date().toISOString();persist();render();loadFoto();
+      setSync(nPend()?'off':'ok',nPend()?'Modifiche in attesa di invio':'✓ Tutto salvato online')}
     catch(err){
       if(err.code==='28000'){CODE=null;try{localStorage.removeItem(CODE_KEY)}catch(_){};askCode('Il codice salvato non è più valido.')}
-      const n=Object.keys(PEND).length;
+      const n=nPend();
       setSync('off',n?`Senza rete: ${n} modific${n===1?'a':'he'} salvat${n===1?'a':'e'} sul telefono, le invio appena torna internet`:'Senza rete: vedi i dati dell’ultimo salvataggio')}
     finally{syncing=null;if(again){again=false;sync()}}})();
   return syncing}
@@ -290,10 +338,17 @@ const dim=(y,m)=>new Date(y,m+1,0).getDate();
 const has=e=>e&&(e.p!=null||e.v!=null);
 const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
 
-function years(){const s=new Set(Object.keys(E).map(k=>+k.slice(0,4)));s.add(now.getFullYear());return [...s].sort()}
-function monthTot(y,m){let p=0,v=0,r=0,n=0;const pre=key(y,m,1).slice(0,8);
-  for(const k in E){if(!k.startsWith(pre))continue;const e=E[k];p+=e.p||0;v+=e.v||0;r+=e.r||0;if(has(e))n++}
-  p=r2(p);v=r2(v);r=r2(r);return{p,v,r,n,b:r2(v-p)}}
+function years(){const s=new Set(Object.keys(E).map(k=>+k.slice(0,4)));for(const id in S)s.add(+S[id].g.slice(0,4));s.add(now.getFullYear());return [...s].sort()}
+// schedine di un giorno, in ordine di inserimento
+function schDay(k){return Object.keys(S).filter(id=>S[id].g===k).map(id=>Object.assign({id},S[id])).sort((a,b)=>(a.c||'')<(b.c||'')?-1:1)}
+// totali del giorno: somma delle schedine (+ eventuali vecchi totali) e ricarica
+function dayTot(k){const e=E[k]||{};let p=e.p||0,v=e.v||0,n=0,gioc=has(e);
+  for(const id in S){const s=S[id];if(s.g!==k)continue;n++;p+=s.p||0;v+=s.v||0;if(s.p!=null||s.v!=null)gioc=true}
+  return{p:r2(p),v:r2(v),r:e.r!=null?r2(e.r):null,n,gioc,b:r2(v-p)}}
+function monthTot(y,m){let p=0,v=0,r=0,n=0,ns=0;const pre=key(y,m,1).slice(0,8);const ks=new Set();
+  for(const k in E)if(k.startsWith(pre))ks.add(k);for(const id in S)if(S[id].g.startsWith(pre))ks.add(S[id].g);
+  ks.forEach(k=>{const d=dayTot(k);p+=d.p;v+=d.v;r+=d.r||0;ns+=d.n;if(d.gioc)n++});
+  p=r2(p);v=r2(v);r=r2(r);return{p,v,r,n,ns,b:r2(v-p)}}
 
 // ---------- navigazione
 function readHash(){const h=(location.hash||'').slice(1);if(h==='vincite'){cur=-2;return}const m=h.match(/^(\d{4})(?:-([a-z]+))?$/);
@@ -318,22 +373,21 @@ function kpis(t,label){return `<div class="grid">
   <div class="kpi"><div class="l">Puntato</div><div class="v">${eur(t.p)}</div></div>
   <div class="kpi"><div class="l">Vincite</div><div class="v">${eur(t.v)}</div></div>
   <div class="kpi"><div class="l">Ricariche</div><div class="v">${eur(t.r)}</div></div>
-  <div class="kpi"><div class="l">Giorni giocati</div><div class="v">${t.n}</div></div></div>`}
+  <div class="kpi"><div class="l">Schedine · giorni</div><div class="v">${t.ns} · ${t.n}</div></div></div>`}
 
 function renderMonth(m){
   const t=monthTot(Y,m);let rows='';
-  for(let d=1;d<=dim(Y,m);d++){const k=key(Y,m,d),e=E[k]||{};const any=e.p!=null||e.v!=null||e.r!=null;
+  for(let d=1;d<=dim(Y,m);d++){const k=key(Y,m,d),t=dayTot(k);const any=t.gioc||t.r!=null||t.n>0;
     if(!showAll&&!any&&k!==todayKey)continue;
-    const b=has(e)?r2((e.v||0)-(e.p||0)):null;
-    rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${byDay(k).length?'<span class="pic">📷</span>':''}</td>
-      <td>${e.p!=null?nn(e.p):''}</td><td>${e.v!=null?nn(e.v):''}</td><td>${e.r!=null?nn(e.r):''}</td>
-      <td class="${b==null?'':cls(b)}">${b==null?'':sn(b)}</td></tr>`}
-  if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Nessuna giocata. Tocca “Inserisci giocata”.</td></tr>`;
+    rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${t.n>1?`<span class="cnt">×${t.n}</span>`:''}${byDay(k).length?'<span class="pic">📷</span>':''}</td>
+      <td>${t.gioc?nn(t.p):''}</td><td>${t.gioc&&t.v?nn(t.v):''}</td><td>${t.r!=null?nn(t.r):''}</td>
+      <td class="${t.gioc?cls(t.b):''}">${t.gioc?sn(t.b):''}</td></tr>`}
+  if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Nessuna giocata. Tocca “Inserisci schedina”.</td></tr>`;
   $('view').innerHTML=kpis(t,MESI[m].toLowerCase())+`<div class="card">
    <div class="toolbar"><b>🎰 ${MESI[m]} ${Y}</b><button class="toggle" id="tg">${showAll?'Solo giorni giocati':'Mostra tutti i giorni'}</button></div>
    <table><thead><tr><th>Giorno</th><th>Puntata €</th><th>Vincita €</th><th>Ricarica €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
    <tfoot><tr><td>TOTALE</td><td>${nn(t.p)}</td><td>${nn(t.v)}</td><td>${nn(t.r)}</td><td class="${cls(t.b)}">${sn(t.b)}</td></tr></tfoot></table></div>
-   <p class="note">Bilancio = vincite − puntate · Le ricariche sono registrate a parte</p>`;
+   <p class="note">Ogni giorno somma le sue schedine · Bilancio = vincite − puntate · Le ricariche sono a parte</p>`;
   $('tg').onclick=()=>{showAll=!showAll;renderMonth(m)};
   $('view').querySelectorAll('tbody tr[data-k]').forEach(tr=>tr.onclick=()=>openSheet(tr.dataset.k,false));
 }
@@ -362,33 +416,81 @@ function renderSummary(){
   $('view').querySelectorAll('tbody tr[data-m]').forEach(tr=>tr.onclick=()=>{cur=+tr.dataset.m;render(true)});
 }
 function renderBanner(){
-  $('banner').innerHTML=(Object.keys(E).length||(ONLINE&&!lastSync))?'':`<div class="banner"><b>Benvenuto! 👋</b>Per ritrovare le giocate che hai già, carica il tuo file Excel o un backup. Oppure inizia subito a inserire.<label class="btn main" for="mFile">⬆︎ Carica file Excel o backup</label></div>`}
-function render(top){renderHeader();renderBanner();renderTabs();cur===-2?renderAlbum():cur===-1?renderSummary():renderMonth(cur);writeHash();$('fab').textContent=cur===-2?'＋ Aggiungi foto':'＋ Inserisci giocata';$('albBtn').classList.toggle('on',cur===-2);$('tabs').style.display=cur===-2?'none':'';$('yPrev').parentNode.style.visibility=cur===-2?'hidden':'';if(top)window.scrollTo(0,0);if(cur===-2)loadFoto()}
+  $('banner').innerHTML=(Object.keys(E).length||Object.keys(S).length||(ONLINE&&!lastSync))?'':`<div class="banner"><b>Benvenuto! 👋</b>Per ritrovare le giocate che hai già, carica il tuo file Excel o un backup. Oppure inizia subito a inserire.<label class="btn main" for="mFile">⬆︎ Carica file Excel o backup</label></div>`}
+function render(top){renderHeader();renderBanner();renderTabs();cur===-2?renderAlbum():cur===-1?renderSummary():renderMonth(cur);writeHash();$('fab').textContent=cur===-2?'＋ Aggiungi foto':'＋ Inserisci schedina';$('albBtn').classList.toggle('on',cur===-2);$('tabs').style.display=cur===-2?'none':'';$('yPrev').parentNode.style.visibility=cur===-2?'hidden':'';if(top)window.scrollTo(0,0);if(cur===-2)loadFoto()}
 
 // ---------- inserimento
 let editKey=null;
 const num=s=>{s=(s||'').trim().replace(/\s|€/g,'');if(!s)return null;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isFinite(n)&&n>=0?r2(n):NaN};
 const fmtIn=n=>n==null?'':String(n).replace('.',',');
-function fill(k){const e=E[k]||{};$('fP').value=fmtIn(e.p);$('fV').value=fmtIn(e.v);$('fR').value=fmtIn(e.r);upd()}
-function upd(){const p=num($('fP').value),v=num($('fV').value);const el=$('fBal');
-  if((p==null&&v==null)||Number.isNaN(p)||Number.isNaN(v)){el.textContent='—';el.className='';return}
-  const b=r2((v||0)-(p||0));el.textContent=sgn(b);el.className=cls(b)}
-function openSheet(k,pick){editKey=k;const d=new Date(k+'T12:00');
-  $('sheetTitle').textContent=pick?'Nuova giocata':d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  $('dateField').style.display=pick?'':'none';$('fDate').value=k;fill(k);dayPics();$('sheetBg').classList.add('on')}
+const dLabel=g=>new Date(g+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+// foglio del giorno: elenco schedine + ricarica
+function openSheet(k){editKey=k;$('sheetTitle').textContent=dLabel(k);$('fR').value=fmtIn((E[k]||{}).r);fillDay();$('sheetBg').classList.add('on')}
+function fillDay(){const k=editKey,list=schDay(k);
+  $('dayList').innerHTML=list.length?list.map((s,i)=>{const b=r2((s.v||0)-(s.p||0));const f=FOTO.find(x=>x.schedina_id===s.id);
+    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">${i+1}</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${s.v?nn(s.v):'0,00'}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>`}).join('')
+    :`<p class="note" style="text-align:left;margin:0">Nessuna schedina in questo giorno.</p>`;
+  $('dayList').querySelectorAll('.sitem').forEach(b=>b.onclick=()=>openSch(b.dataset.id));
+  updDay();dayPics()}
+function updDay(){const t=dayTot(editKey),el=$('fBal');if(!t.gioc){el.textContent='—';el.className='';return}el.textContent=sgn(t.b);el.className=cls(t.b)}
 function closeSheet(){$('sheetBg').classList.remove('on');document.activeElement&&document.activeElement.blur()}
-['fP','fV','fR'].forEach(id=>$(id).oninput=upd);
-$('fDate').onchange=()=>{const k=$('fDate').value;if(/^\d{4}-\d{2}-\d{2}$/.test(k)){editKey=k;fill(k);dayPics()}};
 $('bCancel').onclick=closeSheet;
 $('sheetBg').onclick=e=>{if(e.target===$('sheetBg'))closeSheet()};
-$('bDel').onclick=()=>{delete E[editKey];mark(editKey);closeSheet();afterSave(editKey,'Giorno svuotato')};
-$('sheet').onsubmit=e=>{e.preventDefault();const p=num($('fP').value),v=num($('fV').value),r=num($('fR').value);
-  if([p,v,r].some(Number.isNaN)){$('fBal').textContent='Importo non valido';$('fBal').className='neg';return}
-  const o={};if(p!=null)o.p=p;if(v!=null)o.v=v;if(r!=null)o.r=r;
+$('dayAddS').onclick=()=>openSch(null,editKey);
+$('sheet').onsubmit=e=>{e.preventDefault();const r=num($('fR').value);
+  if(Number.isNaN(r)){toast('⚠️ Ricarica non valida');return}
+  const o=Object.assign({},E[editKey]||{});if(r!=null)o.r=r;else delete o.r;
   if(Object.keys(o).length)E[editKey]=o;else delete E[editKey];
-  mark(editKey);closeSheet();afterSave(editKey,'✓ Salvato')};
-function afterSave(k,msg){if(persist())toast(msg);Y=+k.slice(0,4);cur=+k.slice(5,7)-1;render();sync()}
-$('fab').onclick=()=>{if(cur===-2){upDay=null;$('pFile').click();return}const k=(cur>=0&&(Y!==now.getFullYear()||cur!==now.getMonth()))?key(Y,cur,1):todayKey;openSheet(k,true)};
+  mark(editKey);closeSheet();afterSave(editKey,'✓ Ricarica salvata')};
+function afterSave(k,msg){if(persist())toast(msg);Y=+k.slice(0,4);cur=+k.slice(5,7)-1;render();return sync()}
+
+// editor della singola schedina
+let schId=null,schNew=[],schCart='Walter White';
+function openSch(id,day){schId=id;schNew=[];const s=id?S[id]:null;
+  $('schTitle').textContent=id?'Schedina':'Nuova schedina';
+  $('sDate').value=s?s.g:(day||todayKey);$('sP').value=fmtIn(s&&s.p);$('sV').value=fmtIn(s&&s.v);
+  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;
+  $('sPicsWrap').style.display=FN?'':'none';setSCart(schCart);updSch();sPics();
+  $('schBg').classList.add('on');if(!id)setTimeout(()=>$('sP').focus(),60)}
+function closeSch(){$('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];document.activeElement&&document.activeElement.blur()}
+function updSch(){const p=num($('sP').value),v=num($('sV').value),el=$('sBal');
+  if((p==null&&v==null)||Number.isNaN(p)||Number.isNaN(v)){el.textContent='—';el.className='';return}
+  const b=r2((v||0)-(p||0));el.textContent=sgn(b);el.className=cls(b)}
+['sP','sV'].forEach(id=>$(id).oninput=updSch);
+function setSCart(c){schCart=c;$('sSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.c===c))}
+$('sSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>setSCart(b.dataset.c));
+function sPics(){const ex=schId?FOTO.filter(f=>f.schedina_id===schId):[];
+  $('sPics').innerHTML=ex.map(thumb).join('')+schNew.map((n,i)=>`<button type="button" class="ph newph" data-n="${i}"><img src="${n.prev}" alt=""><span class="x">✕</span></button>`).join('')+`<label class="ph addph" for="sFile"><b>＋</b>Foto</label>`;
+  $('sPics').querySelectorAll('.ph[data-id]').forEach(b=>b.onclick=()=>openViewer(b.dataset.id,ex));
+  $('sPics').querySelectorAll('.ph[data-n]').forEach(b=>b.onclick=()=>{const n=schNew.splice(+b.dataset.n,1)[0];URL.revokeObjectURL(n.prev);sPics()})}
+$('sFile').onchange=e=>{[...e.target.files].forEach(f=>{if(/^image\//.test(f.type)||/\.(heic|heif)$/i.test(f.name))schNew.push({file:f,prev:URL.createObjectURL(f)})});e.target.value='';sPics()};
+$('sCancel').onclick=closeSch;
+$('schBg').onclick=e=>{if(e.target===$('schBg'))closeSch()};
+$('sDel').onclick=()=>{const id=schId,g=S[id].g,nf=FOTO.filter(f=>f.schedina_id===id).length;
+  ask('Eliminare questa schedina?',nf?`Le sue ${nf===1?'foto resta':nf+' foto restano'} nell'album, collegat${nf===1?'a':'e'} al giorno.`:'La schedina verrà tolta dai totali.',()=>{
+    delete S[id];markS(id);FOTO.forEach(f=>{if(f.schedina_id===id)f.schedina_id=null});closeSch();
+    afterSave(g,'Schedina eliminata').then(()=>{if($('sheetBg').classList.contains('on'))fillDay()});if($('sheetBg').classList.contains('on'))fillDay()})};
+$('schForm').onsubmit=async e=>{e.preventDefault();
+  const g=$('sDate').value,p=num($('sP').value),v=num($('sV').value);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('sErr').textContent='Scegli il giorno.';return}
+  if(Number.isNaN(p)||Number.isNaN(v)){$('sErr').textContent='Importo non valido.';return}
+  if(p==null&&v==null){$('sErr').textContent='Scrivi almeno la puntata.';return}
+  const id=schId||uid();const old=S[id];
+  S[id]={g,p,v,c:old&&old.c||new Date().toISOString()};markS(id);
+  FOTO.forEach(f=>{if(f.schedina_id===id)f.giorno=g});
+  const files=schNew.map(n=>n.file),cart=schCart;
+  $('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];
+  const done=afterSave(g,old?'✓ Schedina aggiornata':'✓ Schedina salvata');
+  if($('sheetBg').classList.contains('on')){if(editKey!==g)closeSheet();else fillDay()}
+  if(files.length){await done;
+    if(PS[id]){toast('⚠️ Senza internet: la schedina è salvata, le foto aggiungile dopo');return}
+    let ok=0,ko=0;
+    for(let i=0;i<files.length;i++){toast(`Carico foto ${i+1} di ${files.length}…`);
+      try{const pr=await prepara(files[i]);const j=await fn({azione:'carica',schedina_id:id,giorno:g,cartella:cart,tipo:pr.type,nome:files[i].name,dati:await readB64(pr.blob)});FOTO.unshift(j.foto);ok++}
+      catch(err){ko++;if(err.message==='codice')break}}
+    FOTO.sort((a,b)=>a.giorno<b.giorno?1:a.giorno>b.giorno?-1:0);render();if($('sheetBg').classList.contains('on'))fillDay();
+    toast(ko?`⚠️ Foto caricate ${ok}, non riuscite ${ko}`:'✓ Schedina e foto salvate')}};
+$('fab').onclick=()=>{if(cur===-2){upDay=null;$('pFile').click();return}const k=(cur>=0&&(Y!==now.getFullYear()||cur!==now.getMonth()))?key(Y,cur,1):todayKey;openSch(null,k)};
 
 // ---------- conferme e avvisi
 let toastT;function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),2200)}
@@ -396,14 +498,15 @@ function ask(title,text,yes){$('askTitle').textContent=title;$('askText').textCo
   $('askYes').onclick=()=>{$('askBg').classList.remove('on');yes()};$('askNo').onclick=()=>$('askBg').classList.remove('on')}
 
 // ---------- backup
-function menuInfo(){const n=Object.keys(E).length;let last='';try{last=JSON.parse(localStorage.getItem(KEY)||'{}').saved||''}catch(e){}
-  $('mInfo').textContent=(n?`${n} giorni registrati in totale.`:'Nessuna giocata registrata.')+(lastSync?' Ultima sincronizzazione: '+new Date(lastSync).toLocaleString('it-IT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'.':'')}
+function menuInfo(){const n=Object.keys(S).length;let last='';try{last=JSON.parse(localStorage.getItem(KEY)||'{}').saved||''}catch(e){}
+  $('mInfo').textContent=(n?`${n} schedine registrate in totale.`:'Nessuna schedina registrata.')+(lastSync?' Ultima sincronizzazione: '+new Date(lastSync).toLocaleString('it-IT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'.':'')}
 $('menuBtn').onclick=()=>{menuInfo();$('menuBg').classList.add('on')};
 $('mClose').onclick=()=>$('menuBg').classList.remove('on');
 $('menuBg').onclick=e=>{if(e.target===$('menuBg'))$('menuBg').classList.remove('on')};
 $('mExport').onclick=async()=>{
   const sorted={};Object.keys(E).sort().forEach(k=>sorted[k]=E[k]);
-  const txt=JSON.stringify({app:'giocate',v:1,exported:new Date().toISOString(),entries:sorted},null,1);
+  const sch=Object.keys(S).map(id=>({id,giorno:S[id].g,puntata:S[id].p,vincita:S[id].v})).sort((a,b)=>a.giorno<b.giorno?-1:1);
+  const txt=JSON.stringify({app:'giocate',v:2,exported:new Date().toISOString(),entries:sorted,schedine:sch},null,1);
   const name='giocate-backup-'+todayKey+'.json';
   const file=new File([txt],name,{type:'application/json'});
   try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Backup giocate'});return}}catch(e){if(e&&e.name==='AbortError')return}
@@ -411,16 +514,23 @@ $('mExport').onclick=async()=>{
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Backup scaricato')};
 
 $('mFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
-  try{const data=/\.xlsx$/i.test(f.name)?await readXlsx(f):readJson(await f.text());
-    const n=Object.keys(data).length;if(!n){toast('Nessuna giocata trovata nel file');return}
-    const clash=Object.keys(data).filter(k=>E[k]).length;
-    ask('Caricare '+n+' giorni?',clash?`${clash} giorni sono già nell'app: verranno sostituiti con quelli del file. Gli altri giorni restano come sono.`:'Le giocate del file vengono aggiunte a quelle già presenti.',()=>{
-      Object.assign(E,data);Object.keys(data).forEach(mark);if(persist())toast('✓ Caricati '+n+' giorni');sync();$('menuBg').classList.remove('on');
-      const ks=Object.keys(data).sort();Y=+ks[ks.length-1].slice(0,4);cur=-1;render(true)})}
+  try{const isX=/\.xlsx$/i.test(f.name);const raw=isX?null:JSON.parse(await f.text());
+    const data=isX?await readXlsx(f):readJson(raw);
+    // schedine: dal backup nuovo così come sono, dai vecchi file un totale per giorno (solo nei giorni ancora senza schedine)
+    const newS=[];
+    if(raw&&Array.isArray(raw.schedine))raw.schedine.forEach(s=>{const c=clean({p:s.puntata,v:s.vincita});if(c&&/^\d{4}-\d{2}-\d{2}$/.test(s.giorno))newS.push({id:/^[0-9a-f-]{36}$/i.test(s.id)?s.id:uid(),g:s.giorno,p:c.p??null,v:c.v??null})});
+    else for(const k in data){const d=data[k];if((d.p!=null||d.v!=null)&&!schDay(k).length)newS.push({id:uid(),g:k,p:d.p??null,v:d.v??null})}
+    const ric=Object.keys(data).filter(k=>data[k].r!=null);
+    if(!newS.length&&!ric.length){toast('Niente di nuovo da caricare');return}
+    ask(`Caricare ${newS.length} schedine e ${ric.length} ricariche?`,'Si aggiungono a quelle già nell\'app. I giorni che hanno già schedine non vengono duplicati.',()=>{
+      newS.forEach(s=>{S[s.id]={g:s.g,p:s.p,v:s.v,c:new Date().toISOString()};markS(s.id)});
+      ric.forEach(k=>{E[k]=Object.assign({},E[k],{r:data[k].r});mark(k)});
+      if(persist())toast('✓ File caricato');sync();$('menuBg').classList.remove('on');
+      const ks=newS.map(s=>s.g).concat(ric).sort();if(ks.length){Y=+ks[ks.length-1].slice(0,4)}cur=-1;render(true)})}
   catch(err){toast('⚠️ File non leggibile');console.error(err)}};
 
 function clean(o){const r={};['p','v','r'].forEach(k=>{const x=o[k];if(x!=null&&x!==''&&isFinite(+x)&&+x>=0)r[k]=r2(+x)});return Object.keys(r).length?r:null}
-function readJson(t){const o=JSON.parse(t);const src=o.entries||o;const out={};
+function readJson(o){const src=o.entries||o;const out={};
   for(const k in src){if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const c=clean(src[k]);if(c)out[k]=c}}return out}
 
 // Excel: legge i fogli mensili (Giorno | Puntata | Vincita | Ricarica)
@@ -458,7 +568,6 @@ async function loadFoto(force){
   try{const j=await fn({azione:'elenco'});FOTO=j.foto||[];fotoAt=Date.now()}
   catch(e){fotoErr=navigator.onLine===false?'Senza internet non posso mostrarti le foto.':'Non sono riuscito a caricare le foto. Riprova tra poco.'}
   finally{fotoLoading=false;render()}}
-const dLabel=g=>new Date(g+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 function thumb(f){return `<button class="ph" data-id="${esc(f.id)}"><img loading="lazy" src="${esc(f.url||'')}" alt=""><span class="tag">${f.giorno.slice(8,10)}/${f.giorno.slice(5,7)}</span>${f.cartella==='Heisenberg'?'<span class="hb">💎</span>':''}</button>`}
 function renderAlbum(){
   const n={Tutte:FOTO.length};CART.forEach(c=>n[c]=FOTO.filter(f=>f.cartella===c).length);
@@ -484,10 +593,11 @@ function chiudiAlbum(){cur=prevCur!=null&&prevCur!==-2?prevCur:(Y===now.getFullY
 $('albBtn').onclick=()=>{cur===-2?chiudiAlbum():apriAlbum()};
 $('mAlbum').onclick=()=>{$('menuBg').classList.remove('on');apriAlbum()};
 function dayPics(){
-  const w=$('dayPicsWrap');if(!FN){w.style.display='none';return}w.style.display='';
-  $('dayPics').innerHTML=byDay(editKey).map(thumb).join('')+`<label class="ph addph" for="pFile" id="dayAdd"><b>＋</b>Foto</label>`;
-  $('dayAdd').onclick=()=>{upDay=editKey};
-  $('dayPics').querySelectorAll('.ph[data-id]').forEach(b=>b.onclick=()=>openViewer(b.dataset.id,byDay(editKey)));
+  const w=$('dayPicsWrap'),sids=new Set(schDay(editKey).map(s=>s.id));
+  const free=byDay(editKey).filter(f=>!f.schedina_id||!sids.has(f.schedina_id));
+  if(!FN||!free.length){w.style.display='none';return}w.style.display='';
+  $('dayPics').innerHTML=free.map(thumb).join('');
+  $('dayPics').querySelectorAll('.ph[data-id]').forEach(b=>b.onclick=()=>openViewer(b.dataset.id,free));
 }
 function openViewer(id,list){vList=list.slice();vIdx=Math.max(0,vList.findIndex(f=>f.id===id));showV();$('viewer').classList.add('on')}
 function showV(){const f=vList[vIdx];if(!f){$('viewer').classList.remove('on');return}
@@ -500,14 +610,14 @@ $('vPrev').onclick=()=>{if(vIdx>0){vIdx--;showV()}};
 $('vNext').onclick=()=>{if(vIdx<vList.length-1){vIdx++;showV()}};
 let tx=null;$('vImg').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
 $('vImg').addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>50){dx<0?$('vNext').onclick():$('vPrev').onclick()}});
-$('vDay').onclick=()=>{const f=vList[vIdx];$('viewer').classList.remove('on');closeSheet();Y=+f.giorno.slice(0,4);cur=+f.giorno.slice(5,7)-1;showAll=false;render(true);
+$('vDay').onclick=()=>{const f=vList[vIdx];$('viewer').classList.remove('on');closeSheet();closeSch();Y=+f.giorno.slice(0,4);cur=+f.giorno.slice(5,7)-1;showAll=false;render(true);
   setTimeout(()=>{const tr=document.querySelector(`tr[data-k="${f.giorno}"]`);if(tr)tr.scrollIntoView({block:'center'})},60)};
 $('vMove').onclick=async()=>{const f=vList[vIdx];const to=f.cartella==='Heisenberg'?'Walter White':'Heisenberg';
   try{const j=await fn({azione:'modifica',id:f.id,cartella:to});Object.assign(f,j.foto);const g=FOTO.find(x=>x.id===f.id);if(g)Object.assign(g,j.foto);showV();render();toast('Spostata in '+to)}
   catch(e){if(e.message!=='codice')toast('⚠️ Non riesco a spostarla, serve internet')}};
 $('vDel').onclick=()=>{const f=vList[vIdx];ask('Eliminare questa foto?','La foto del '+dLabel(f.giorno)+' verrà cancellata definitivamente.',async()=>{
   try{await fn({azione:'elimina',id:f.id});FOTO=FOTO.filter(x=>x.id!==f.id);vList.splice(vIdx,1);if(vIdx>=vList.length)vIdx=vList.length-1;
-    if(!vList.length)$('viewer').classList.remove('on');else showV();render();if($('sheetBg').classList.contains('on'))dayPics();toast('Foto eliminata')}
+    if(!vList.length)$('viewer').classList.remove('on');else showV();render();if($('sheetBg').classList.contains('on'))fillDay();if($('schBg').classList.contains('on'))sPics();toast('Foto eliminata')}
   catch(e){if(e.message!=='codice')toast('⚠️ Non riesco a eliminarla, serve internet')}})};
 // caricamento
 function setCart(c){upCart=c;$('upSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.c===c))}
@@ -534,7 +644,7 @@ $('upGo').onclick=async()=>{const g=$('upDate').value;if(!/^\d{4}-\d{2}-\d{2}$/.
     try{const p=await prepara(upFiles[i]);const j=await fn({azione:'carica',giorno:g,cartella:upCart,tipo:p.type,nome:upFiles[i].name,dati:await readB64(p.blob)});FOTO.push(j.foto);ok++}
     catch(e){ko++;if(e.message==='codice')break}}
   FOTO.sort((a,b)=>a.giorno<b.giorno?1:a.giorno>b.giorno?-1:0);
-  $('upBg').classList.remove('on');render();if($('sheetBg').classList.contains('on'))dayPics();
+  $('upBg').classList.remove('on');render();if($('sheetBg').classList.contains('on'))fillDay();
   toast(ko?`⚠️ Caricate ${ok}, non riuscite ${ko}`:(ok===1?'✓ Foto caricata':`✓ ${ok} foto caricate`))};
 
 window.addEventListener('hashchange',()=>{readHash();render(true)});
