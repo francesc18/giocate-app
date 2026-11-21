@@ -93,6 +93,9 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .sync.ok{background:var(--pos);opacity:1}.sync.off{background:#e0a800;opacity:1}.sync.busy{background:var(--acc);opacity:1;animation:pl 1s infinite}
 @keyframes pl{50%{opacity:.3}}
 .err{color:var(--neg);font-size:14px;min-height:20px;margin:-4px 2px 10px}
+.albbtn{position:fixed;right:16px;bottom:calc(22px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer;z-index:5;border:1px solid var(--line)}
+.albbtn.on{background:var(--acc);color:var(--acc-ink)}
+.back{border:0;background:none;color:var(--acc);font-weight:700;font-size:15px;cursor:pointer;padding:0;margin:0 0 12px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
 .chip{border:0;background:var(--chip);color:var(--ink);font-weight:600;font-size:13px;padding:8px 12px;border-radius:999px;cursor:pointer}
 .chip.on{background:var(--acc);color:var(--acc-ink)}
@@ -138,6 +141,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
   <main id="view"></main>
 </div>
 <button class="fab" id="fab">＋ Inserisci giocata</button>
+<button class="albbtn" id="albBtn" aria-label="Le mie vincite">📸</button>
 
 <div class="sheet-bg" id="sheetBg">
   <form class="sheet" id="sheet" autocomplete="off">
@@ -161,7 +165,8 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
     <h3>Backup e dati</h3>
     <p id="mSync"></p>
     <p>Le giocate sono salvate online nel tuo database: se elimini l'app o cambi telefono, rientri con il tuo codice e ritrovi tutto. Il backup qui sotto è una copia in più, facoltativa.</p>
-    <button class="btn main" id="mExport">⬇︎ Salva backup</button>
+    <button class="btn main" id="mAlbum">📸 Le mie vincite</button>
+    <button class="btn" id="mExport">⬇︎ Salva backup</button>
     <label class="btn" for="mFile">⬆︎ Carica backup o file Excel</label>
     <input type="file" id="mFile" accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     <p id="mInfo"></p>
@@ -296,12 +301,12 @@ function readHash(){const h=(location.hash||'').slice(1);if(h==='vincite'){cur=-
 function writeHash(){const h=cur===-2?'#vincite':'#'+Y+'-'+(cur===-1?'riepilogo':SLUG[cur]);if(location.hash!==h)history.replaceState(null,'',h)}
 readHash();
 
-function renderHeader(){const ys=years();$('yLbl').textContent=Y;$('yPrev').disabled=Y<=Math.min(...ys);$('yNext').disabled=Y>=Math.max(...ys,now.getFullYear())}
+function renderHeader(){const ys=years();$('yLbl').textContent=Y;$('yPrev').disabled=Y<=Math.min(...ys);$('yNext').disabled=Y>=Math.max(...ys,now.getFullYear()+1)}
 $('yPrev').onclick=()=>{Y--;render()};
 $('yNext').onclick=()=>{Y++;render()};
 
 function renderTabs(){
-  let h=`<button class="tab ${cur===-1?'on':''}" data-m="-1">📊 Riepilogo</button><button class="tab ${cur===-2?'on':''}" data-m="-2">📸 Vincite</button>`;
+  let h=`<button class="tab ${cur===-1?'on':''}" data-m="-1">📊 Riepilogo</button>`;
   MESI.forEach((m,i)=>{const t=monthTot(Y,i);const c=t.p||t.v||t.r?(t.b>0?'var(--pos)':t.b<0?'var(--neg)':'var(--muted)'):null;
     h+=`<button class="tab ${cur===i?'on':''}" data-m="${i}">${m}${c?`<span class="dot" style="background:${c}"></span>`:''}</button>`});
   $('tabs').innerHTML=h;
@@ -358,7 +363,7 @@ function renderSummary(){
 }
 function renderBanner(){
   $('banner').innerHTML=(Object.keys(E).length||(ONLINE&&!lastSync))?'':`<div class="banner"><b>Benvenuto! 👋</b>Per ritrovare le giocate che hai già, carica il tuo file Excel o un backup. Oppure inizia subito a inserire.<label class="btn main" for="mFile">⬆︎ Carica file Excel o backup</label></div>`}
-function render(top){renderHeader();renderBanner();renderTabs();cur===-2?renderAlbum():cur===-1?renderSummary():renderMonth(cur);writeHash();$('fab').textContent=cur===-2?'＋ Aggiungi foto':'＋ Inserisci giocata';if(top)window.scrollTo(0,0);if(cur===-2)loadFoto()}
+function render(top){renderHeader();renderBanner();renderTabs();cur===-2?renderAlbum():cur===-1?renderSummary():renderMonth(cur);writeHash();$('fab').textContent=cur===-2?'＋ Aggiungi foto':'＋ Inserisci giocata';$('albBtn').classList.toggle('on',cur===-2);$('tabs').style.display=cur===-2?'none':'';$('yPrev').parentNode.style.visibility=cur===-2?'hidden':'';if(top)window.scrollTo(0,0);if(cur===-2)loadFoto()}
 
 // ---------- inserimento
 let editKey=null;
@@ -459,7 +464,7 @@ function renderAlbum(){
   const n={Tutte:FOTO.length};CART.forEach(c=>n[c]=FOTO.filter(f=>f.cartella===c).length);
   const list=FOTO.filter(f=>fotoFiltro==='Tutte'||f.cartella===fotoFiltro);
   const yrs={};list.forEach(f=>{(yrs[f.giorno.slice(0,4)]=yrs[f.giorno.slice(0,4)]||[]).push(f)});
-  let h=`<div class="card"><div class="toolbar"><b>📸 Le mie vincite</b><label class="toggle" for="pFile" id="albAdd">＋ Aggiungi</label></div>
+  let h=`<button class="back" id="albBack">‹ Torna alle giocate</button><div class="card"><div class="toolbar"><b>📸 Le mie vincite</b><label class="toggle" for="pFile" id="albAdd">＋ Aggiungi</label></div>
    <div class="sub" style="padding-top:10px">${FOTO.length} foto · Walter White ${n['Walter White']} · Heisenberg ${n['Heisenberg']}</div></div>
    <div class="chips">${['Tutte'].concat(CART).map(c=>`<button class="chip ${fotoFiltro===c?'on':''}" data-c="${c}">${c==='Heisenberg'?'💎 ':''}${c} (${n[c]})</button>`).join('')}</div>`;
   if(!CODE)h+=`<p class="note">Inserisci il codice per vedere le foto.</p>`;
@@ -470,8 +475,14 @@ function renderAlbum(){
   $('view').innerHTML=h;
   $('view').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{fotoFiltro=b.dataset.c;renderAlbum()});
   $('albAdd').onclick=()=>{upDay=null};
+  $('albBack').onclick=chiudiAlbum;
   $('view').querySelectorAll('.ph').forEach(b=>b.onclick=()=>openViewer(b.dataset.id,list));
 }
+let prevCur=null;
+function apriAlbum(){if(cur!==-2){prevCur=cur;cur=-2}render(true)}
+function chiudiAlbum(){cur=prevCur!=null&&prevCur!==-2?prevCur:(Y===now.getFullYear()?now.getMonth():-1);render(true)}
+$('albBtn').onclick=()=>{cur===-2?chiudiAlbum():apriAlbum()};
+$('mAlbum').onclick=()=>{$('menuBg').classList.remove('on');apriAlbum()};
 function dayPics(){
   const w=$('dayPicsWrap');if(!FN){w.style.display='none';return}w.style.display='';
   $('dayPics').innerHTML=byDay(editKey).map(thumb).join('')+`<label class="ph addph" for="pFile" id="dayAdd"><b>＋</b>Foto</label>`;
