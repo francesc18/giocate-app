@@ -120,7 +120,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .viewer .acts .del{color:#ff6b5e}
 .wbtn{border:0;background:rgba(255,255,255,.15);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;flex:none}
 .seg{display:flex;gap:8px;margin-bottom:12px}
-.seg button{flex:1;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
+.seg button{flex:1;padding:12px 6px!important;font-size:13px!important;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
 .seg button.on{border-color:var(--acc);background:var(--acc);color:var(--acc-ink)}
 .slist{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
 .sitem{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;color:var(--ink);width:100%;font:inherit}
@@ -174,9 +174,11 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 <div class="sheet-bg" id="schBg">
   <form class="sheet" id="schForm" autocomplete="off">
     <h3 id="schTitle">Nuova schedina</h3>
-    <div class="field"><label for="sDate">Giorno</label><input type="date" id="sDate"></div>
+    <div class="field"><label for="sDate">Giorno della giocata</label><input type="date" id="sDate"></div>
     <div class="field"><label for="sP">Puntata (€)</label><input id="sP" inputmode="decimal" placeholder="0,00"></div>
-    <div class="field"><label for="sV">Vincita (€)</label><input id="sV" inputmode="decimal" placeholder="0,00 se persa"></div>
+    <div class="field" style="margin-bottom:6px"><label>Esito</label></div>
+    <div class="seg" id="sEsito"><button type="button" data-e="attesa">⏳ In attesa</button><button type="button" data-e="vinta">✅ Vinta</button><button type="button" data-e="persa">❌ Persa</button></div>
+    <div class="field" id="sVField"><label for="sV">Vincita (€)</label><input id="sV" inputmode="decimal" placeholder="0,00"></div>
     <div class="prev"><span>Bilancio della schedina</span><b id="sBal">—</b></div>
     <div id="sPicsWrap">
       <div class="sec">Foto della schedina</div>
@@ -272,7 +274,8 @@ function persist(){
 function mark(k){PEND[k]=E[k]?Object.assign({},E[k]):null}
 function markS(id){PS[id]=S[id]?Object.assign({},S[id]):null}
 const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
-function rowsToS(rows){const o={};rows.forEach(r=>{o[r.id]={g:r.giorno,p:r.puntata==null?null:+r.puntata,v:r.vincita==null?null:+r.vincita,c:r.created_at}});return o}
+function rowsToS(rows){const o={};rows.forEach(r=>{o[r.id]={g:r.giorno,p:r.puntata==null?null:+r.puntata,v:r.vincita==null?null:+r.vincita,e:r.esito||(r.vincita>0?'vinta':'persa'),c:r.created_at}});return o}
+const esitoOf=s=>s.e||((s.v||0)>0?'vinta':'persa');
 const nPend=()=>Object.keys(PEND).length+Object.keys(PS).length;
 async function rpc(fn,body){
   const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),15000);
@@ -294,7 +297,7 @@ function sync(){if(!ONLINE||!CODE)return Promise.resolve();if(syncing){again=tru
         const sent=JSON.parse(snap);for(const k in sent){if(JSON.stringify(PEND[k])===JSON.stringify(sent[k]))delete PEND[k]}}
       const ids=Object.keys(PS);
       if(ids.length){const snap=JSON.stringify(PS);
-        await rpc('schedine_salva',{p_codice:CODE,p_schedine:ids.map(id=>PS[id]?{id,giorno:PS[id].g,puntata:PS[id].p,vincita:PS[id].v}:{id,elimina:true})});
+        await rpc('schedine_salva',{p_codice:CODE,p_schedine:ids.map(id=>PS[id]?{id,giorno:PS[id].g,puntata:PS[id].p,vincita:PS[id].v,esito:esitoOf(PS[id])}:{id,elimina:true})});
         const sent=JSON.parse(snap);for(const id in sent){if(JSON.stringify(PS[id])===JSON.stringify(sent[id]))delete PS[id]}}
       const [rg,rs]=await Promise.all([rpc('giocate_elenco',{p_codice:CODE}),rpc('schedine_elenco',{p_codice:CODE})]);
       const srv=rowsToE(rg);for(const k in PEND){if(PEND[k])srv[k]=PEND[k];else delete srv[k]}
@@ -375,20 +378,24 @@ function kpis(t,label){return `<div class="grid">
   <div class="kpi"><div class="l">Ricariche</div><div class="v">${eur(t.r)}</div></div>
   <div class="kpi"><div class="l">Schedine · giorni</div><div class="v">${t.ns} · ${t.n}</div></div></div>`}
 
+function pendingCard(){const L=Object.keys(S).filter(id=>esitoOf(S[id])==='attesa').map(id=>Object.assign({id},S[id])).sort((a,b)=>a.g<b.g?-1:1);
+  if(!L.length)return'';
+  return `<div class="card"><div class="toolbar"><b>⏳ Schedine in attesa (${L.length})</b></div><div class="slist" style="padding:10px;margin:0">${L.map(s=>`<button type="button" class="sitem" data-pid="${s.id}"><span class="si-m"><b>${new Date(s.g+'T12:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'})}</b> · puntata ${nn(s.p||0)}</span><span class="si-b" style="color:var(--acc);font-size:13px">Esito ›</span></button>`).join('')}</div></div>`}
+function bindPending(){$('view').querySelectorAll('[data-pid]').forEach(b=>b.onclick=()=>openSch(b.dataset.pid))}
 function renderMonth(m){
   const t=monthTot(Y,m);let rows='';
   for(let d=1;d<=dim(Y,m);d++){const k=key(Y,m,d),t=dayTot(k);const any=t.gioc||t.r!=null||t.n>0;
     if(!showAll&&!any&&k!==todayKey)continue;
-    rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${t.n>1?`<span class="cnt">×${t.n}</span>`:''}${byDay(k).length?'<span class="pic">📷</span>':''}</td>
+    rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${t.n>1?`<span class="cnt">×${t.n}</span>`:''}${schDay(k).some(s=>esitoOf(s)==='attesa')?'<span class="pic">⏳</span>':''}${byDay(k).length?'<span class="pic">📷</span>':''}</td>
       <td>${t.gioc?nn(t.p):''}</td><td>${t.gioc&&t.v?nn(t.v):''}</td><td>${t.r!=null?nn(t.r):''}</td>
       <td class="${t.gioc?cls(t.b):''}">${t.gioc?sn(t.b):''}</td></tr>`}
   if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Nessuna giocata. Tocca “Inserisci schedina”.</td></tr>`;
-  $('view').innerHTML=kpis(t,MESI[m].toLowerCase())+`<div class="card">
+  $('view').innerHTML=pendingCard()+kpis(t,MESI[m].toLowerCase())+`<div class="card">
    <div class="toolbar"><b>🎰 ${MESI[m]} ${Y}</b><button class="toggle" id="tg">${showAll?'Solo giorni giocati':'Mostra tutti i giorni'}</button></div>
    <table><thead><tr><th>Giorno</th><th>Puntata €</th><th>Vincita €</th><th>Ricarica €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
    <tfoot><tr><td>TOTALE</td><td>${nn(t.p)}</td><td>${nn(t.v)}</td><td>${nn(t.r)}</td><td class="${cls(t.b)}">${sn(t.b)}</td></tr></tfoot></table></div>
-   <p class="note">Ogni giorno somma le sue schedine · Bilancio = vincite − puntate · Le ricariche sono a parte</p>`;
-  $('tg').onclick=()=>{showAll=!showAll;renderMonth(m)};
+   <p class="note">Le vincite vanno sul giorno della giocata · Bilancio = vincite − puntate · Le ricariche sono a parte</p>`;
+  $('tg').onclick=()=>{showAll=!showAll;renderMonth(m)};bindPending();
   $('view').querySelectorAll('tbody tr[data-k]').forEach(tr=>tr.onclick=()=>openSheet(tr.dataset.k,false));
 }
 function chart(ts){
@@ -408,12 +415,12 @@ function renderSummary(){
   T.p=r2(T.p);T.v=r2(T.v);T.r=r2(T.r);T.b=r2(T.v-T.p);
   const att=ts.filter(t=>t.b>0).length,pas=ts.filter(t=>t.b<0).length;
   const rows=ts.map((t,i)=>`<tr data-m="${i}"><td>${MESI[i].slice(0,3)}<span class="mname">${MESI[i].slice(3)}</span></td><td>${nn(t.p)}</td><td>${nn(t.v)}</td><td>${nn(t.r)}</td><td class="${cls(t.b)}">${sn(t.b)}</td></tr>`).join('');
-  $('view').innerHTML=kpis(T,'anno')+`<div class="card"><h2>Bilancio mese per mese</h2><div class="sub">${att} mesi attivi · ${pas} passivi</div><div class="chart">${chart(ts)}</div></div>
+  $('view').innerHTML=pendingCard()+kpis(T,'anno')+`<div class="card"><h2>Bilancio mese per mese</h2><div class="sub">${att} mesi attivi · ${pas} passivi</div><div class="chart">${chart(ts)}</div></div>
   <div class="card"><div class="toolbar"><b>📊 Riepilogo annuale ${Y}</b></div>
   <table><thead><tr><th>Mese</th><th>Puntato €</th><th>Vincite €</th><th>Ricariche €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
   <tfoot><tr><td>TOTALE</td><td>${nn(T.p)}</td><td>${nn(T.v)}</td><td>${nn(T.r)}</td><td class="${cls(T.b)}">${sn(T.b)}</td></tr></tfoot></table></div>
   <p class="note">Tocca un mese per aprirlo</p>`;
-  $('view').querySelectorAll('tbody tr[data-m]').forEach(tr=>tr.onclick=()=>{cur=+tr.dataset.m;render(true)});
+  $('view').querySelectorAll('tbody tr[data-m]').forEach(tr=>tr.onclick=()=>{cur=+tr.dataset.m;render(true)});bindPending();
 }
 function renderBanner(){
   $('banner').innerHTML=(Object.keys(E).length||Object.keys(S).length||(ONLINE&&!lastSync))?'':`<div class="banner"><b>Benvenuto! 👋</b>Per ritrovare le giocate che hai già, carica il tuo file Excel o un backup. Oppure inizia subito a inserire.<label class="btn main" for="mFile">⬆︎ Carica file Excel o backup</label></div>`}
@@ -428,7 +435,8 @@ const dLabel=g=>new Date(g+'T12:00').toLocaleDateString('it-IT',{weekday:'long',
 function openSheet(k){editKey=k;$('sheetTitle').textContent=dLabel(k);$('fR').value=fmtIn((E[k]||{}).r);fillDay();$('sheetBg').classList.add('on')}
 function fillDay(){const k=editKey,list=schDay(k);
   $('dayList').innerHTML=list.length?list.map((s,i)=>{const b=r2((s.v||0)-(s.p||0));const f=FOTO.find(x=>x.schedina_id===s.id);
-    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">${i+1}</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${s.v?nn(s.v):'0,00'}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>`}).join('')
+    const es=esitoOf(s);
+    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">${es==='attesa'?'⏳':es==='vinta'?'✅':'❌'}</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · ${es==='attesa'?'<b>in attesa</b>':es==='vinta'?'Vinta <b>'+nn(s.v)+'</b>':'persa'}</span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${es==='attesa'?'':cls(b)}">${es==='attesa'?'':sn(b)}</span></button>`}).join('')
     :`<p class="note" style="text-align:left;margin:0">Nessuna schedina in questo giorno.</p>`;
   $('dayList').querySelectorAll('.sitem').forEach(b=>b.onclick=()=>openSch(b.dataset.id));
   updDay();dayPics()}
@@ -445,15 +453,18 @@ $('sheet').onsubmit=e=>{e.preventDefault();const r=num($('fR').value);
 function afterSave(k,msg){if(persist())toast(msg);Y=+k.slice(0,4);cur=+k.slice(5,7)-1;render();return sync()}
 
 // editor della singola schedina
-let schId=null,schNew=[],schCart='Walter White';
+let schId=null,schNew=[],schCart='Walter White',schEsito='attesa';
+function setEsito(e){schEsito=e;$('sEsito').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.e===e));$('sVField').style.display=e==='vinta'?'':'none';updSch()}
+$('sEsito').querySelectorAll('button').forEach(b=>b.onclick=()=>{setEsito(b.dataset.e);if(b.dataset.e==='vinta')setTimeout(()=>$('sV').focus(),50)});
 function openSch(id,day){schId=id;schNew=[];const s=id?S[id]:null;
   $('schTitle').textContent=id?'Schedina':'Nuova schedina';
   $('sDate').value=s?s.g:(day||todayKey);$('sP').value=fmtIn(s&&s.p);$('sV').value=fmtIn(s&&s.v);
-  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;
+  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;setEsito(s?esitoOf(s):'attesa');
   $('sPicsWrap').style.display=FN?'':'none';setSCart(schCart);updSch();sPics();
   $('schBg').classList.add('on');if(!id)setTimeout(()=>$('sP').focus(),60)}
 function closeSch(){$('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];document.activeElement&&document.activeElement.blur()}
-function updSch(){const p=num($('sP').value),v=num($('sV').value),el=$('sBal');
+function updSch(){const p=num($('sP').value),v=schEsito==='vinta'?num($('sV').value):null,el=$('sBal');
+  if(schEsito==='attesa'&&p!=null&&!Number.isNaN(p)){el.textContent='⏳ in attesa · '+eur(-p);el.className='';return}
   if((p==null&&v==null)||Number.isNaN(p)||Number.isNaN(v)){el.textContent='—';el.className='';return}
   const b=r2((v||0)-(p||0));el.textContent=sgn(b);el.className=cls(b)}
 ['sP','sV'].forEach(id=>$(id).oninput=updSch);
@@ -471,16 +482,17 @@ $('sDel').onclick=()=>{const id=schId,g=S[id].g,nf=FOTO.filter(f=>f.schedina_id=
     delete S[id];markS(id);FOTO.forEach(f=>{if(f.schedina_id===id)f.schedina_id=null});closeSch();
     afterSave(g,'Schedina eliminata').then(()=>{if($('sheetBg').classList.contains('on'))fillDay()});if($('sheetBg').classList.contains('on'))fillDay()})};
 $('schForm').onsubmit=async e=>{e.preventDefault();
-  const g=$('sDate').value,p=num($('sP').value),v=num($('sV').value);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('sErr').textContent='Scegli il giorno.';return}
+  const g=$('sDate').value,p=num($('sP').value),es=schEsito,v=es==='vinta'?num($('sV').value):null;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('sErr').textContent='Scegli il giorno della giocata.';return}
   if(Number.isNaN(p)||Number.isNaN(v)){$('sErr').textContent='Importo non valido.';return}
-  if(p==null&&v==null){$('sErr').textContent='Scrivi almeno la puntata.';return}
+  if(p==null){$('sErr').textContent='Scrivi la puntata.';return}
+  if(es==='vinta'&&!v){$('sErr').textContent='Scrivi quanto hai vinto.';return}
   const id=schId||uid();const old=S[id];
-  S[id]={g,p,v,c:old&&old.c||new Date().toISOString()};markS(id);
+  S[id]={g,p,v,e:es,c:old&&old.c||new Date().toISOString()};markS(id);
   FOTO.forEach(f=>{if(f.schedina_id===id)f.giorno=g});
   const files=schNew.map(n=>n.file),cart=schCart;
   $('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];
-  const done=afterSave(g,old?'✓ Schedina aggiornata':'✓ Schedina salvata');
+  const done=afterSave(g,es==='vinta'&&old&&esitoOf(old)!=='vinta'?`✅ Vincita aggiunta al ${+g.slice(8,10)}/${+g.slice(5,7)}`:old?'✓ Schedina aggiornata':es==='attesa'?'⏳ Schedina salvata, in attesa':'✓ Schedina salvata');
   if($('sheetBg').classList.contains('on')){if(editKey!==g)closeSheet();else fillDay()}
   if(files.length){await done;
     if(PS[id]){toast('⚠️ Senza internet: la schedina è salvata, le foto aggiungile dopo');return}
@@ -505,7 +517,7 @@ $('mClose').onclick=()=>$('menuBg').classList.remove('on');
 $('menuBg').onclick=e=>{if(e.target===$('menuBg'))$('menuBg').classList.remove('on')};
 $('mExport').onclick=async()=>{
   const sorted={};Object.keys(E).sort().forEach(k=>sorted[k]=E[k]);
-  const sch=Object.keys(S).map(id=>({id,giorno:S[id].g,puntata:S[id].p,vincita:S[id].v})).sort((a,b)=>a.giorno<b.giorno?-1:1);
+  const sch=Object.keys(S).map(id=>({id,giorno:S[id].g,puntata:S[id].p,vincita:S[id].v,esito:esitoOf(S[id])})).sort((a,b)=>a.giorno<b.giorno?-1:1);
   const txt=JSON.stringify({app:'giocate',v:2,exported:new Date().toISOString(),entries:sorted,schedine:sch},null,1);
   const name='giocate-backup-'+todayKey+'.json';
   const file=new File([txt],name,{type:'application/json'});
@@ -518,12 +530,12 @@ $('mFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)
     const data=isX?await readXlsx(f):readJson(raw);
     // schedine: dal backup nuovo così come sono, dai vecchi file un totale per giorno (solo nei giorni ancora senza schedine)
     const newS=[];
-    if(raw&&Array.isArray(raw.schedine))raw.schedine.forEach(s=>{const c=clean({p:s.puntata,v:s.vincita});if(c&&/^\d{4}-\d{2}-\d{2}$/.test(s.giorno))newS.push({id:/^[0-9a-f-]{36}$/i.test(s.id)?s.id:uid(),g:s.giorno,p:c.p??null,v:c.v??null})});
+    if(raw&&Array.isArray(raw.schedine))raw.schedine.forEach(s=>{const c=clean({p:s.puntata,v:s.vincita});if(c&&/^\d{4}-\d{2}-\d{2}$/.test(s.giorno))newS.push({id:/^[0-9a-f-]{36}$/i.test(s.id)?s.id:uid(),g:s.giorno,p:c.p??null,v:c.v??null,e:['attesa','vinta','persa'].includes(s.esito)?s.esito:null})});
     else for(const k in data){const d=data[k];if((d.p!=null||d.v!=null)&&!schDay(k).length)newS.push({id:uid(),g:k,p:d.p??null,v:d.v??null})}
     const ric=Object.keys(data).filter(k=>data[k].r!=null);
     if(!newS.length&&!ric.length){toast('Niente di nuovo da caricare');return}
     ask(`Caricare ${newS.length} schedine e ${ric.length} ricariche?`,'Si aggiungono a quelle già nell\'app. I giorni che hanno già schedine non vengono duplicati.',()=>{
-      newS.forEach(s=>{S[s.id]={g:s.g,p:s.p,v:s.v,c:new Date().toISOString()};markS(s.id)});
+      newS.forEach(s=>{S[s.id]={g:s.g,p:s.p,v:s.v,e:s.e||((s.v||0)>0?'vinta':'persa'),c:new Date().toISOString()};markS(s.id)});
       ric.forEach(k=>{E[k]=Object.assign({},E[k],{r:data[k].r});mark(k)});
       if(persist())toast('✓ File caricato');sync();$('menuBg').classList.remove('on');
       const ks=newS.map(s=>s.g).concat(ric).sort();if(ks.length){Y=+ks[ks.length-1].slice(0,4)}cur=-1;render(true)})}
