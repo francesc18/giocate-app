@@ -67,7 +67,9 @@ tr.empty td{color:var(--muted)}
 tr.today td:first-child{font-weight:800;color:var(--acc)}
 tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(in srgb,var(--chip) 45%,transparent)}
 .dname{font-size:11px;color:var(--muted);margin-left:4px}
-.fab{white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));border:0;background:var(--acc);color:var(--acc-ink);font-weight:700;font-size:16px;padding:15px 26px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.2);cursor:pointer;z-index:5}
+.bar{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:5;max-width:520px;margin:0 auto}
+.fab{flex:1;white-space:nowrap;border:0;background:var(--acc);color:var(--acc-ink);font-weight:800;font-size:16px;padding:15px 10px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.2);cursor:pointer}
+.fab.alt{background:var(--card);color:var(--ink);border:1.5px solid var(--acc)}
 .chart{padding:4px 8px 12px}
 .chart svg{width:100%;height:auto;display:block}
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
@@ -93,7 +95,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .sync.ok{background:var(--pos);opacity:1}.sync.off{background:#e0a800;opacity:1}.sync.busy{background:var(--acc);opacity:1;animation:pl 1s infinite}
 @keyframes pl{50%{opacity:.3}}
 .err{color:var(--neg);font-size:14px;min-height:20px;margin:-4px 2px 10px}
-.albbtn{position:fixed;right:16px;bottom:calc(22px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer;z-index:5;border:1px solid var(--line)}
+.albbtn{flex:none;width:52px;height:52px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer;z-index:5;border:1px solid var(--line)}
 .albbtn.on{background:var(--acc);color:var(--acc-ink)}
 .back{border:0;background:none;color:var(--acc);font-weight:700;font-size:15px;cursor:pointer;padding:0;margin:0 0 12px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
@@ -153,15 +155,24 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
   <nav class="tabs" id="tabs"></nav>
   <main id="view"></main>
 </div>
-<button class="fab" id="fab">＋ Inserisci schedina</button>
-<button class="albbtn" id="albBtn" aria-label="Le mie vincite">📸</button>
+<div class="bar"><button class="fab alt" id="fabP">＋ Puntata</button><button class="fab" id="fab">＋ Vincita</button><button class="albbtn" id="albBtn" aria-label="Le mie vincite">📸</button></div>
+<div class="sheet-bg" id="pBg" style="z-index:15">
+  <form class="sheet menu" id="pForm" autocomplete="off">
+    <h3>＋ Puntata</h3>
+    <div class="field"><label for="pDate">Giorno</label><input type="date" id="pDate"></div>
+    <div class="field"><label for="pAmt">Quanto hai giocato (€)</label><input id="pAmt" inputmode="decimal" placeholder="0,00"></div>
+    <p id="pInfo"></p>
+    <div class="err" id="pErr"></div>
+    <div class="btns"><button type="button" class="btn" id="pNo">Annulla</button><button type="submit" class="btn main">Aggiungi</button></div>
+  </form>
+</div>
 
 <div class="sheet-bg" id="sheetBg">
   <form class="sheet" id="sheet" autocomplete="off">
     <h3 id="sheetTitle"></h3>
-    <div class="sec">Schedine</div>
+    <div class="sec">Puntate e vincite</div>
     <div class="slist" id="dayList"></div>
-    <button type="button" class="addrow" id="dayAddS">＋ Aggiungi schedina</button>
+    <div style="display:flex;gap:8px"><button type="button" class="addrow" id="dayAddP">＋ Puntata</button><button type="button" class="addrow" id="dayAddS">＋ Vincita</button></div>
     <div class="field"><label for="fR">Ricarica del giorno (€)</label><input id="fR" inputmode="decimal" placeholder="0,00"></div>
     <div class="prev"><span>Bilancio del giorno</span><b id="fBal">—</b></div>
     <div id="dayPicsWrap"><div class="sec">Altre foto del giorno</div><div class="daypics" id="dayPics"></div></div>
@@ -385,7 +396,7 @@ function kpis(t,label){return `<div class="grid">
   <div class="kpi"><div class="l">Puntato</div><div class="v">${eur(t.p)}</div></div>
   <div class="kpi"><div class="l">Vincite</div><div class="v">${eur(t.v)}</div></div>
   <div class="kpi"><div class="l">Ricariche</div><div class="v">${eur(t.r)}</div></div>
-  <div class="kpi"><div class="l">Schedine · giorni</div><div class="v">${t.ns} · ${t.n}</div></div></div>`}
+  <div class="kpi"><div class="l">Giorni giocati</div><div class="v">${t.n}</div></div></div>`}
 
 function pendingCard(){const L=Object.keys(S).filter(id=>esitoOf(S[id])==='attesa').map(id=>Object.assign({id},S[id])).sort((a,b)=>a.g<b.g?-1:1);
   if(!L.length)return'';
@@ -398,7 +409,7 @@ function renderMonth(m){
     rows+=`<tr data-k="${k}" class="${any?'':'empty'} ${k===todayKey?'today':''}"><td>${d}<span class="dname">${GG[new Date(Y,m,d).getDay()]}</span>${t.n>1?`<span class="cnt">×${t.n}</span>`:''}${byDay(k).length?'<span class="pic">📷</span>':''}</td>
       <td>${t.gioc&&t.p?nn(t.p):''}</td><td>${t.gioc&&t.v?nn(t.v):''}</td><td>${t.r!=null?nn(t.r):''}</td>
       <td class="${t.gioc?cls(t.b):''}">${t.gioc?sn(t.b):''}</td></tr>`}
-  if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Nessuna giocata. Tocca “Inserisci schedina”.</td></tr>`;
+  if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Niente in questo mese. Tocca “＋ Puntata” o “＋ Vincita”.</td></tr>`;
   $('view').innerHTML=kpis(t,MESI[m].toLowerCase())+`<div class="card">
    <div class="toolbar"><b>🎰 ${MESI[m]} ${Y}</b><button class="toggle" id="tg">${showAll?'Solo giorni giocati':'Mostra tutti i giorni'}</button></div>
    <table><thead><tr><th>Giorno</th><th>Puntata €</th><th>Vincita €</th><th>Ricarica €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
@@ -433,7 +444,7 @@ function renderSummary(){
 }
 function renderBanner(){
   $('banner').innerHTML=(Object.keys(E).length||Object.keys(S).length||(ONLINE&&!lastSync))?'':`<div class="banner"><b>Benvenuto! 👋</b>Per ritrovare le giocate che hai già, carica il tuo file Excel o un backup. Oppure inizia subito a inserire.<label class="btn main" for="mFile">⬆︎ Carica file Excel o backup</label></div>`}
-function render(top){renderHeader();renderBanner();renderTabs();cur===-2?renderAlbum():cur===-1?renderSummary():renderMonth(cur);writeHash();$('fab').textContent=cur===-2?'＋ Aggiungi foto':'＋ Inserisci schedina';$('albBtn').classList.toggle('on',cur===-2);$('tabs').style.display=cur===-2?'none':'';$('yPrev').parentNode.style.visibility=cur===-2?'hidden':'';if(top)window.scrollTo(0,0);if(cur===-2)loadFoto()}
+function render(top){renderHeader();renderBanner();renderTabs();cur===-2?renderAlbum():cur===-1?renderSummary():renderMonth(cur);writeHash();$('albBtn').classList.toggle('on',cur===-2);$('tabs').style.display=cur===-2?'none':'';$('yPrev').parentNode.style.visibility=cur===-2?'hidden':'';if(top)window.scrollTo(0,0);if(cur===-2)loadFoto()}
 
 // ---------- inserimento
 let editKey=null;
@@ -444,8 +455,9 @@ const dLabel=g=>new Date(g+'T12:00').toLocaleDateString('it-IT',{weekday:'long',
 function openSheet(k){editKey=k;$('sheetTitle').textContent=dLabel(k);$('fR').value=fmtIn((E[k]||{}).r);fillDay();$('sheetBg').classList.add('on')}
 function fillDay(){const k=editKey,list=schDay(k);
   $('dayList').innerHTML=list.length?list.map((s,i)=>{const b=r2((s.v||0)-(s.p||0));const f=FOTO.find(x=>x.schedina_id===s.id);
-    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">${i+1}</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${s.v?nn(s.v):'—'}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>`}).join('')
-    :`<p class="note" style="text-align:left;margin:0">Nessuna schedina in questo giorno.</p>`;
+    if(!s.v)return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🎟</span><span class="si-m">Puntate del giorno <b>${nn(s.p||0)}</b></span><span class="si-b ${cls(b)}">${sn(b)}</span></button>`;
+    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🏆</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${nn(s.v)}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>`}).join('')
+    :`<p class="note" style="text-align:left;margin:0">Niente in questo giorno.</p>`;
   $('dayList').querySelectorAll('.sitem').forEach(b=>b.onclick=()=>openSch(b.dataset.id));
   updDay();dayPics()}
 function updDay(){const t=dayTot(editKey),el=$('fBal');if(!t.gioc){el.textContent='—';el.className='';return}el.textContent=sgn(t.b);el.className=cls(t.b)}
@@ -453,6 +465,7 @@ function closeSheet(){$('sheetBg').classList.remove('on');document.activeElement
 $('bCancel').onclick=closeSheet;
 $('sheetBg').onclick=e=>{if(e.target===$('sheetBg'))closeSheet()};
 $('dayAddS').onclick=()=>openSch(null,editKey);
+$('dayAddP').onclick=()=>openP(editKey);
 $('sheet').onsubmit=e=>{e.preventDefault();const r=num($('fR').value);
   if(Number.isNaN(r)){toast('⚠️ Ricarica non valida');return}
   const o=Object.assign({},E[editKey]||{});if(r!=null)o.r=r;else delete o.r;
@@ -460,11 +473,29 @@ $('sheet').onsubmit=e=>{e.preventDefault();const r=num($('fR').value);
   mark(editKey);closeSheet();afterSave(editKey,'✓ Ricarica salvata')};
 function afterSave(k,msg){if(persist())toast(msg);Y=+k.slice(0,4);cur=+k.slice(5,7)-1;render();return sync()}
 
+// ＋ Puntata: somma l'importo alle puntate del giorno (la voce senza vincita)
+const puntateDay=k=>schDay(k).find(s=>!s.v);
+function pInfo(){const k=$('pDate').value,e=/^\d{4}-\d{2}-\d{2}$/.test(k)&&puntateDay(k),a=num($('pAmt').value);
+  const prima=e?(e.p||0):0;$('pInfo').textContent=!/^\d{4}-\d{2}-\d{2}$/.test(k)?'':
+    (prima?`Puntate di quel giorno finora: ${eur(prima)}`:'Ancora nessuna puntata in quel giorno.')+(a&&!Number.isNaN(a)?` → diventano ${eur(r2(prima+a))}`:'')}
+function openP(day){$('pDate').value=day||todayKey;$('pAmt').value='';$('pErr').textContent='';pInfo();$('pBg').classList.add('on');setTimeout(()=>$('pAmt').focus(),60)}
+$('pDate').onchange=pInfo;$('pAmt').oninput=pInfo;
+$('pNo').onclick=()=>$('pBg').classList.remove('on');
+$('pBg').onclick=e=>{if(e.target===$('pBg'))$('pBg').classList.remove('on')};
+$('pForm').onsubmit=e=>{e.preventDefault();const k=$('pDate').value,a=num($('pAmt').value);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(k)){$('pErr').textContent='Scegli il giorno.';return}
+  if(!a||Number.isNaN(a)){$('pErr').textContent='Scrivi quanto hai giocato.';return}
+  const ex=puntateDay(k);let id;
+  if(ex){id=ex.id;S[id].p=r2((S[id].p||0)+a)}else{id=uid();S[id]={g:k,p:a,v:null,e:'persa',c:new Date().toISOString()}}
+  markS(id);$('pBg').classList.remove('on');
+  afterSave(k,`✓ Puntate del ${+k.slice(8,10)}/${+k.slice(5,7)}: ${eur(S[id].p)}`);if($('sheetBg').classList.contains('on'))fillDay()};
+$('fabP').onclick=()=>{const k=(cur>=0&&(Y!==now.getFullYear()||cur!==now.getMonth()))?key(Y,cur,1):todayKey;openP(k)};
+
 // editor della singola schedina
 let schId=null,schNew=[],schCart='Walter White',schEsito='attesa';
 
 function openSch(id,day){schId=id;schNew=[];const s=id?S[id]:null;
-  $('schTitle').textContent=id?'Schedina':'Nuova schedina';
+  $('schTitle').textContent=id?(s.v?'Vincita':'Puntate del giorno'):'Nuova vincita';
   $('sDate').value=s?s.g:(day||todayKey);$('sP').value=fmtIn(s&&s.p);$('sV').value=fmtIn(s&&s.v);
   $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;updSch();
   $('sPicsWrap').style.display=FN?'':'none';setSCart(schCart);updSch();sPics();
@@ -507,7 +538,7 @@ $('schForm').onsubmit=async e=>{e.preventDefault();
       catch(err){ko++;if(err.message==='codice')break}}
     FOTO.sort((a,b)=>a.giorno<b.giorno?1:a.giorno>b.giorno?-1:0);render();if($('sheetBg').classList.contains('on'))fillDay();
     toast(ko?`⚠️ Foto caricate ${ok}, non riuscite ${ko}`:'✓ Schedina e foto salvate')}};
-$('fab').onclick=()=>{if(cur===-2){upDay=null;$('pFile').click();return}const k=(cur>=0&&(Y!==now.getFullYear()||cur!==now.getMonth()))?key(Y,cur,1):todayKey;openSch(null,k)};
+$('fab').onclick=()=>{const k=(cur>=0&&(Y!==now.getFullYear()||cur!==now.getMonth()))?key(Y,cur,1):todayKey;openSch(null,k)};
 
 // ---------- conferme e avvisi
 let toastT;function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),2200)}
