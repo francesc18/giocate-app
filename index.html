@@ -153,7 +153,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 <body>
 <div class="wrap">
   <header>
-    <h1>🎰 Giocate <span id="sync" class="sync" title=""></span></h1>
+    <h1>🧾 Giocate <span id="sync" class="sync" title=""></span></h1>
     <div style="display:flex;gap:8px;align-items:center">
       <div class="year"><button id="yPrev" aria-label="Anno precedente">‹</button><span id="yLbl"></span><button id="yNext" aria-label="Anno successivo">›</button></div>
       <button class="icon-btn" id="menuBtn" aria-label="Menu">⋯</button>
@@ -420,7 +420,7 @@ function renderMonth(m){
       <td class="${t.gioc?cls(t.b):''}">${t.gioc?sn(t.b):''}</td></tr>`}
   if(!rows)rows=`<tr class="empty"><td colspan="5" style="text-align:center;padding:24px">Niente in questo mese. Tocca “＋ Puntata” o “＋ Vincita”.</td></tr>`;
   $('view').innerHTML=kpis(t,MESI[m].toLowerCase())+`<div class="card">
-   <div class="toolbar"><b>🎰 ${MESI[m]} ${Y}</b><button class="toggle" id="tg">${showAll?'Solo giorni giocati':'Mostra tutti i giorni'}</button></div>
+   <div class="toolbar"><b>🧾 ${MESI[m]} ${Y}</b><button class="toggle" id="tg">${showAll?'Solo giorni giocati':'Mostra tutti i giorni'}</button></div>
    <table><thead><tr><th>Giorno</th><th>Puntata €</th><th>Vincita €</th><th>Ricarica €</th><th>Bilancio €</th></tr></thead><tbody>${rows}</tbody>
    <tfoot><tr><td>TOTALE</td><td>${nn(t.p)}</td><td>${nn(t.v)}</td><td>${nn(t.r)}</td><td class="${cls(t.b)}">${sn(t.b)}</td></tr></tfoot></table></div>
    <p class="note">Le vincite vanno sul giorno della giocata · Bilancio = vincite − puntate · Le ricariche sono a parte</p>`;
