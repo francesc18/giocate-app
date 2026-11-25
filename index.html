@@ -130,6 +130,9 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .mv{display:flex;flex-direction:column;gap:4px}
 .mvb{flex:1;width:36px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;color:var(--acc);font-size:13px;font-weight:800;cursor:pointer;padding:0}
 .mvb:disabled{opacity:.25;cursor:default}
+.kv{display:grid;grid-template-columns:auto auto;column-gap:8px;row-gap:2px;justify-content:start;align-items:baseline}
+.kv b{text-align:right;white-space:nowrap}
+.kv span{white-space:nowrap}
 .chk small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
 .chk{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:-4px 0 12px;font-size:14px;line-height:1.4;cursor:pointer}
 .chk input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--acc)}
@@ -466,7 +469,7 @@ function fillDay(){const k=editKey,list=schDay(k);
   const arrows=(i)=>list.length>1?`<div class="mv"><button type="button" class="mvb" data-mv="${i}" data-d="-1" aria-label="Sposta su" ${i===0?'disabled':''}>▲</button><button type="button" class="mvb" data-mv="${i}" data-d="1" aria-label="Sposta giù" ${i===list.length-1?'disabled':''}>▼</button></div>`:'';
   $('dayList').innerHTML=list.length?list.map((s,i)=>{const b=r2((s.v||0)-(s.p||0));const f=FOTO.find(x=>x.schedina_id===s.id);
     if(!s.v)return `<div class="srow"><button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🎟</span><span class="si-m">Puntate del giorno <b>${nn(s.p||0)}</b></span><span class="si-b ${cls(b)}">${sn(b)}</span></button>${arrows(i)}</div>`;
-    return `<div class="srow"><button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🏆</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${nn(s.v)}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>${arrows(i)}</div>`}).join('')
+    return `<div class="srow"><button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🏆</span><span class="si-m"><span class="kv"><span>Puntata</span><b>${s.p!=null?nn(s.p):'—'}</b><span>Vincita</span><b>${nn(s.v)}</b></span></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>${arrows(i)}</div>`}).join('')
     :`<p class="note" style="text-align:left;margin:0">Niente in questo giorno.</p>`;
   $('dayList').querySelectorAll('.sitem').forEach(b=>b.onclick=()=>openSch(b.dataset.id));
   $('dayList').querySelectorAll('.mvb').forEach(b=>b.onclick=()=>{const i=+b.dataset.mv,j=i+(+b.dataset.d);if(j<0||j>=list.length)return;
@@ -766,7 +769,12 @@ window.addEventListener('hashchange',()=>{readHash();render(true)});
 render();
 if(ONLINE){if(CODE)sync();else askCode()}else setSync('off','Database non collegato: dati solo su questo telefono');
 
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+if('serviceWorker' in navigator){
+  // quando arriva una versione nuova dell'app, ricarico una volta sola per mostrarla subito
+  const hadCtrl=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadCtrl&&!reloaded){reloaded=true;location.reload()}});
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})})}
 })();
 </script>
 </body>

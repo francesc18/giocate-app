@@ -1,6 +1,6 @@
 // Service worker dell'app Giocate: tiene in cache i file così l'app si apre anche senza rete.
 // Le giocate sono salvate sul telefono (localStorage) e non passano da qui.
-const CACHE = "giocate-v13";
+const CACHE = "giocate-v15";
 const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
@@ -19,18 +19,25 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+// Con internet carica sempre la versione più recente; la copia salvata serve solo offline
+// (o se la rete non risponde entro qualche secondo).
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
-  e.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(req, { ignoreSearch: true });
-      const network = fetch(req, { cache: "no-cache" })
-        .then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const res = await Promise.race([
+        fetch(req, { cache: "no-store" }),
+        new Promise((_, ko) => setTimeout(() => ko(new Error("lenta")), 4000)),
+      ]);
+      if (res && res.ok) cache.put(req, res.clone());
+      return res;
+    } catch (_) {
+      const cached = await cache.match(req, { ignoreSearch: true }) || (req.mode === "navigate" ? await cache.match("index.html") : null);
+      return cached || fetch(req);
+    }
+  })());
 });
