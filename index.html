@@ -125,6 +125,12 @@ tfoot td{font-weight:800;border-top:2px solid var(--line);background:color-mix(i
 .seg{display:flex;gap:8px;margin-bottom:12px}
 .seg button{flex:1;padding:12px 6px!important;font-size:13px!important;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
 .seg button.on{border-color:var(--acc);background:var(--acc);color:var(--acc-ink)}
+.srow{display:flex;gap:6px;align-items:stretch}
+.srow .sitem{flex:1;min-width:0}
+.mv{display:flex;flex-direction:column;gap:4px}
+.mvb{flex:1;width:36px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;color:var(--acc);font-size:13px;font-weight:800;cursor:pointer;padding:0}
+.mvb:disabled{opacity:.25;cursor:default}
+.chk small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
 .chk{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:-4px 0 12px;font-size:14px;line-height:1.4;cursor:pointer}
 .chk input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--acc)}
 .slist{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
@@ -297,7 +303,7 @@ function persist(){
 function mark(k){PEND[k]=E[k]?Object.assign({},E[k]):null}
 function markS(id){PS[id]=S[id]?Object.assign({},S[id]):null}
 const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
-function rowsToS(rows){const o={};rows.forEach(r=>{o[r.id]={g:r.giorno,p:r.puntata==null?null:+r.puntata,v:r.vincita==null?null:+r.vincita,e:r.esito||(r.vincita>0?'vinta':'persa'),c:r.created_at}});return o}
+function rowsToS(rows){const o={};rows.forEach(r=>{o[r.id]={g:r.giorno,p:r.puntata==null?null:+r.puntata,v:r.vincita==null?null:+r.vincita,e:r.esito||(r.vincita>0?'vinta':'persa'),o:r.ordine==null?null:+r.ordine,m:!!r.spostata,c:r.created_at}});return o}
 const esitoOf=s=>s.e||((s.v||0)>0?'vinta':'persa');
 const nPend=()=>Object.keys(PEND).length+Object.keys(PS).length;
 async function rpc(fn,body){
@@ -320,7 +326,7 @@ function sync(){if(!ONLINE||!CODE)return Promise.resolve();if(syncing){again=tru
         const sent=JSON.parse(snap);for(const k in sent){if(JSON.stringify(PEND[k])===JSON.stringify(sent[k]))delete PEND[k]}}
       const ids=Object.keys(PS);
       if(ids.length){const snap=JSON.stringify(PS);
-        await rpc('schedine_salva',{p_codice:CODE,p_schedine:ids.map(id=>PS[id]?{id,giorno:PS[id].g,puntata:PS[id].p,vincita:PS[id].v,esito:esitoOf(PS[id])}:{id,elimina:true})});
+        await rpc('schedine_salva',{p_codice:CODE,p_schedine:ids.map(id=>PS[id]?{id,giorno:PS[id].g,puntata:PS[id].p,vincita:PS[id].v,esito:esitoOf(PS[id]),ordine:PS[id].o??null,spostata:!!PS[id].m}:{id,elimina:true})});
         const sent=JSON.parse(snap);for(const id in sent){if(JSON.stringify(PS[id])===JSON.stringify(sent[id]))delete PS[id]}}
       const [rg,rs]=await Promise.all([rpc('giocate_elenco',{p_codice:CODE}),rpc('schedine_elenco',{p_codice:CODE})]);
       const srv=rowsToE(rg);for(const k in PEND){if(PEND[k])srv[k]=PEND[k];else delete srv[k]}
@@ -366,7 +372,7 @@ const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
 
 function years(){const s=new Set(Object.keys(E).map(k=>+k.slice(0,4)));for(const id in S)s.add(+S[id].g.slice(0,4));s.add(now.getFullYear());return [...s].sort()}
 // schedine di un giorno, in ordine di inserimento
-function schDay(k){return Object.keys(S).filter(id=>S[id].g===k).map(id=>Object.assign({id},S[id])).sort((a,b)=>(a.c||'')<(b.c||'')?-1:1)}
+function schDay(k){return Object.keys(S).filter(id=>S[id].g===k).map(id=>Object.assign({id},S[id])).sort((a,b)=>((a.o??1e9)-(b.o??1e9))||((a.c||'')<(b.c||'')?-1:(a.c||'')>(b.c||'')?1:0))}
 // totali del giorno: somma delle schedine (+ eventuali vecchi totali) e ricarica
 function dayTot(k){const e=E[k]||{};let p=e.p||0,v=e.v||0,n=0,gioc=has(e);
   for(const id in S){const s=S[id];if(s.g!==k)continue;n++;p+=s.p||0;v+=s.v||0;if(s.p!=null||s.v!=null)gioc=true}
@@ -457,11 +463,15 @@ const dLabel=g=>new Date(g+'T12:00').toLocaleDateString('it-IT',{weekday:'long',
 // foglio del giorno: elenco schedine + ricarica
 function openSheet(k){editKey=k;$('sheetTitle').textContent=dLabel(k);$('fR').value=fmtIn((E[k]||{}).r);fillDay();$('sheetBg').classList.add('on')}
 function fillDay(){const k=editKey,list=schDay(k);
+  const arrows=(i)=>list.length>1?`<div class="mv"><button type="button" class="mvb" data-mv="${i}" data-d="-1" aria-label="Sposta su" ${i===0?'disabled':''}>▲</button><button type="button" class="mvb" data-mv="${i}" data-d="1" aria-label="Sposta giù" ${i===list.length-1?'disabled':''}>▼</button></div>`:'';
   $('dayList').innerHTML=list.length?list.map((s,i)=>{const b=r2((s.v||0)-(s.p||0));const f=FOTO.find(x=>x.schedina_id===s.id);
-    if(!s.v)return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🎟</span><span class="si-m">Puntate del giorno <b>${nn(s.p||0)}</b></span><span class="si-b ${cls(b)}">${sn(b)}</span></button>`;
-    return `<button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🏆</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${nn(s.v)}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>`}).join('')
+    if(!s.v)return `<div class="srow"><button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🎟</span><span class="si-m">Puntate del giorno <b>${nn(s.p||0)}</b></span><span class="si-b ${cls(b)}">${sn(b)}</span></button>${arrows(i)}</div>`;
+    return `<div class="srow"><button type="button" class="sitem" data-id="${s.id}"><span class="si-n">🏆</span><span class="si-m">Puntata <b>${s.p!=null?nn(s.p):'—'}</b> · Vincita <b>${nn(s.v)}</b></span>${f?`<img src="${esc(f.url||'')}" alt="">`:''}<span class="si-b ${cls(b)}">${sn(b)}</span></button>${arrows(i)}</div>`}).join('')
     :`<p class="note" style="text-align:left;margin:0">Niente in questo giorno.</p>`;
   $('dayList').querySelectorAll('.sitem').forEach(b=>b.onclick=()=>openSch(b.dataset.id));
+  $('dayList').querySelectorAll('.mvb').forEach(b=>b.onclick=()=>{const i=+b.dataset.mv,j=i+(+b.dataset.d);if(j<0||j>=list.length)return;
+    const L=list.slice();[L[i],L[j]]=[L[j],L[i]];L.forEach((s,n)=>{if(S[s.id].o!==n){S[s.id].o=n;markS(s.id)}});
+    persist();render();fillDay();sync()});
   updDay();dayPics()}
 function updDay(){const t=dayTot(editKey),el=$('fBal');if(!t.gioc){el.textContent='—';el.className='';return}el.textContent=sgn(t.b);el.className=cls(t.b)}
 function closeSheet(){$('sheetBg').classList.remove('on');document.activeElement&&document.activeElement.blur()}
@@ -478,6 +488,12 @@ function afterSave(k,msg){if(persist())toast(msg);Y=+k.slice(0,4);cur=+k.slice(5
 
 // ＋ Puntata: somma l'importo alle puntate del giorno (la voce senza vincita)
 const puntateDay=k=>schDay(k).find(s=>!s.v);
+// aggiunge (o toglie, se delta<0) soldi alle "Puntate del giorno"; false se non ce ne sono abbastanza
+function addPuntate(k,delta){const ex=puntateDay(k),n=r2((ex?(ex.p||0):0)+delta);
+  if(n<-0.001)return false;
+  if(ex){if(n>0)S[ex.id].p=n;else delete S[ex.id];markS(ex.id)}
+  else if(n>0){const id=uid();S[id]={g:k,p:n,v:null,e:'persa',o:-1,c:new Date().toISOString()};markS(id)}
+  return true}
 function pInfo(){const k=$('pDate').value,e=/^\d{4}-\d{2}-\d{2}$/.test(k)&&puntateDay(k),a=num($('pAmt').value);
   const prima=e?(e.p||0):0;$('pInfo').textContent=!/^\d{4}-\d{2}-\d{2}$/.test(k)?'':
     (prima?`Puntate di quel giorno finora: ${eur(prima)}`:'Ancora nessuna puntata in quel giorno.')+(a&&!Number.isNaN(a)?` → diventano ${eur(r2(prima+a))}`:'')}
@@ -500,7 +516,7 @@ let schId=null,schNew=[],schCart='Walter White',schEsito='attesa';
 function openSch(id,day){schId=id;schNew=[];const s=id?S[id]:null;
   $('schTitle').textContent=id?(s.v?'Vincita':'Puntate del giorno'):'Nuova vincita';
   $('sDate').value=s?s.g:(day||todayKey);$('sP').value=fmtIn(s&&s.p);$('sV').value=fmtIn(s&&s.v);
-  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;$('sIncl').checked=true;updSch();updIncl();
+  $('sDel').style.display=id?'':'none';$('sErr').textContent='';$('sGo').disabled=false;$('sIncl').checked=s?!!s.m:true;updSch();updIncl();
   $('sPicsWrap').style.display=FN?'':'none';setSCart(schCart);updSch();sPics();
   $('schBg').classList.add('on');if(!id)setTimeout(()=>$('sP').focus(),60)}
 function closeSch(){$('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];document.activeElement&&document.activeElement.blur()}
@@ -509,10 +525,18 @@ function updSch(){const p=num($('sP').value),v=num($('sV').value),el=$('sBal');
   const b=r2((v||0)-(p||0));el.textContent=sgn(b);el.className=cls(b)}
 ['sP','sV'].forEach(id=>$(id).oninput=updSch);
 // nuova vincita: la sua puntata può essere già tra le "puntate del giorno" → la spostiamo, senza contarla due volte
-function updIncl(){const g=$('sDate').value,p=num($('sP').value),ex=!schId&&/^\d{4}-\d{2}-\d{2}$/.test(g)?puntateDay(g):null;
-  const show=!!(ex&&ex.p>0&&p>0&&!Number.isNaN(p));$('sInclF').style.display=show?'':'none';
-  if(show)$('sInclT').textContent=`È già nelle puntate di quel giorno (${eur(ex.p)}): la sposto qui${p<=ex.p?`, le puntate del giorno diventano ${eur(r2(ex.p-p))}`:''}`;}
-$('sP').addEventListener('input',updIncl);$('sDate').addEventListener('change',updIncl);
+function updIncl(){const g=$('sDate').value,p=num($('sP').value),v=num($('sV').value),okG=/^\d{4}-\d{2}-\d{2}$/.test(g),pOk=p>0&&!Number.isNaN(p);
+  const old=schId?S[schId]:null,ex=okG?puntateDay(g):null,chk=$('sIncl').checked;
+  if(!old){const show=!!(ex&&ex.p>0&&pOk);$('sInclF').style.display=show?'':'none';
+    if(show)$('sInclT').innerHTML=`È già nelle puntate di quel giorno (${eur(ex.p)}): la sposto qui<small>${chk?(p<=ex.p?`Le puntate del giorno diventano ${eur(r2(ex.p-p))}.`:`Sono solo ${eur(ex.p)}: togli la spunta.`):`Senza spunta la puntata si aggiunge come nuova.`}</small>`;return}
+  // vincita già salvata: la spunta si può mettere o togliere, l'app rimette a posto le puntate del giorno
+  const show=!!(old.v||v)&&pOk;$('sInclF').style.display=show?'':'none';if(!show)return;
+  let note='';
+  if(chk&&!old.m)note=`Salvando tolgo ${eur(p)} dalle puntate del giorno.`;
+  else if(!chk&&old.m)note=`Salvando rimetto ${eur(old.p||0)} nelle puntate del giorno.`;
+  else if(chk&&old.m&&(Math.abs((old.p||0)-p)>0.001||old.g!==g))note=`Salvando aggiorno anche le puntate del giorno.`;
+  $('sInclT').innerHTML=`La puntata di questa vincita era già nelle «Puntate del giorno»${note?`<small>${note}</small>`:''}`}
+$('sP').addEventListener('input',updIncl);$('sV').addEventListener('input',updIncl);$('sDate').addEventListener('change',updIncl);$('sIncl').addEventListener('change',updIncl);
 function setSCart(c){schCart=c;$('sSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.c===c))}
 $('sSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>setSCart(b.dataset.c));
 function sPics(){const ex=schId?FOTO.filter(f=>f.schedina_id===schId):[];
@@ -522,24 +546,27 @@ function sPics(){const ex=schId?FOTO.filter(f=>f.schedina_id===schId):[];
 $('sFile').onchange=e=>{[...e.target.files].forEach(f=>{if(/^image\//.test(f.type)||/\.(heic|heif)$/i.test(f.name))schNew.push({file:f,prev:URL.createObjectURL(f)})});e.target.value='';sPics()};
 $('sCancel').onclick=closeSch;
 $('schBg').onclick=e=>{if(e.target===$('schBg'))closeSch()};
-$('sDel').onclick=()=>{const id=schId,g=S[id].g,nf=FOTO.filter(f=>f.schedina_id===id).length;
-  ask('Eliminare questa schedina?',nf?`Le sue ${nf===1?'foto resta':nf+' foto restano'} nell'album, collegat${nf===1?'a':'e'} al giorno.`:'La schedina verrà tolta dai totali.',()=>{
-    delete S[id];markS(id);FOTO.forEach(f=>{if(f.schedina_id===id)f.schedina_id=null});closeSch();
+$('sDel').onclick=()=>{const id=schId,s=S[id],g=s.g,nf=FOTO.filter(f=>f.schedina_id===id).length,back=s.m&&s.p>0;
+  ask(s.v?'Eliminare questa vincita?':'Eliminare le puntate del giorno?',(back?`La sua puntata (${eur(s.p)}) torna nelle puntate del giorno. `:'')+(nf?`Le sue ${nf===1?'foto resta':nf+' foto restano'} nell'album, collegat${nf===1?'a':'e'} al giorno.`:'Verrà tolta dai totali.'),()=>{
+    delete S[id];markS(id);if(back)addPuntate(g,s.p);FOTO.forEach(f=>{if(f.schedina_id===id)f.schedina_id=null});closeSch();
     afterSave(g,'Schedina eliminata').then(()=>{if($('sheetBg').classList.contains('on'))fillDay()});if($('sheetBg').classList.contains('on'))fillDay()})};
 $('schForm').onsubmit=async e=>{e.preventDefault();
   const g=$('sDate').value,p=num($('sP').value),v=num($('sV').value),es=(v||0)>0?'vinta':'persa';
   if(!/^\d{4}-\d{2}-\d{2}$/.test(g)){$('sErr').textContent='Scegli il giorno della giocata.';return}
   if(Number.isNaN(p)||Number.isNaN(v)){$('sErr').textContent='Importo non valido.';return}
   if(p==null&&v==null){$('sErr').textContent='Scrivi la puntata o la vincita.';return}
-  const exP=!schId&&p>0?puntateDay(g):null,sposta=!!(exP&&exP.p>0&&$('sInclF').style.display!=='none'&&$('sIncl').checked);
-  if(sposta&&p>exP.p+0.001){$('sErr').textContent=`Le puntate di quel giorno sono solo ${eur(exP.p)}: togli la spunta o correggi la puntata.`;return}
   const id=schId||uid();const old=S[id];
-  if(sposta){const r=r2(exP.p-p);if(r>0)S[exP.id].p=r;else delete S[exP.id];markS(exP.id)}
-  S[id]={g,p,v,e:es,c:old&&old.c||new Date().toISOString()};markS(id);
+  const sposta=(v||0)>0&&p>0&&$('sInclF').style.display!=='none'&&$('sIncl').checked;
+  // rimetto a posto le puntate del giorno: prima restituisco la vecchia puntata spostata, poi tolgo la nuova
+  const bakS=JSON.stringify(S),bakPS=JSON.stringify(PS);
+  if(old&&old.m&&old.p>0)addPuntate(old.g,old.p);
+  if(sposta&&!addPuntate(g,-p)){const ex=puntateDay(g);S=JSON.parse(bakS);PS=JSON.parse(bakPS);
+    $('sErr').textContent=`Le puntate di quel giorno sono solo ${eur(ex?(ex.p||0):0)}: togli la spunta o correggi la puntata.`;return}
+  S[id]={g,p,v,e:es,o:old?old.o:null,m:!!sposta,c:old&&old.c||new Date().toISOString()};markS(id);
   FOTO.forEach(f=>{if(f.schedina_id===id)f.giorno=g});
   const files=schNew.map(n=>n.file),cart=schCart;
   $('schBg').classList.remove('on');schNew.forEach(n=>URL.revokeObjectURL(n.prev));schNew=[];
-  const done=afterSave(g,old?'✓ Aggiornata':`✓ Vincita salvata al ${+g.slice(8,10)}/${+g.slice(5,7)}`+(sposta?', puntata spostata':''));
+  const done=afterSave(g,old?'✓ Aggiornata'+(!!old.m!==!!sposta?(sposta?', puntata tolta dalle puntate del giorno':', puntata rimessa nelle puntate del giorno'):''):`✓ Vincita salvata al ${+g.slice(8,10)}/${+g.slice(5,7)}`+(sposta?', puntata spostata':''));
   if($('sheetBg').classList.contains('on')){if(editKey!==g)closeSheet();else fillDay()}
   if(files.length){await done;
     if(PS[id]){toast('⚠️ Senza internet: la schedina è salvata, le foto aggiungile dopo');return}
